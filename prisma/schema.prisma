@@ -3,64 +3,288 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum UserRole {
   CUSTOMER
   VENDOR
+  RECRUITER
   ADMIN
 }
 
+enum VendorStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  SOLD_OUT
+}
+
+enum ProductCondition {
+  NEW
+  REFURBISHED
+  USED
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum NotificationType {
+  ORDER_STATUS
+  VENDOR_VERIFICATION
+  MESSAGE
+  SYSTEM
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
-  id           String   @id @default(cuid())
-  fullName     String
-  email        String   @unique
-  passwordHash String
-  phoneNumber  String?
-  role         UserRole @default(CUSTOMER)
+  id        String   @id @default(cuid())
+  name      String?
+  email     String   @unique
+  password  String
+  phone     String?
+  role      UserRole @default(CUSTOMER)
+  avatar    String?
+  bio       String?
 
-  vendor        Vendor?
-  orders        Order[]
+  vendorProfile    Vendor?
+  recruiterProfile RecruiterProfile?
+  orders           Order[]
+  reviews          Review[]
+  sentMessages     Message[]          @relation("SentMessages")
+  receivedMessages Message[]          @relation("ReceivedMessages")
+  notifications    Notification[]
+  cart             Cart?
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RecruiterProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  companyName String
+  industry    String?
+  website     String?
+  phone       String?
+  verified    Boolean  @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Vendor {
-  id            String   @id @default(cuid())
-  businessName  String
-  officeAddress String?
-  verified      Boolean  @default(false)
+  id                String       @id @default(cuid())
+  userId            String       @unique
+  businessName      String
+  officeAddress     String
+  phone             String?
+  governmentId      String?
+  businessRegNumber String?
+  bankDetails       String?
+  logo              String?
+  banner            String?
+  status            VendorStatus @default(PENDING)
+  rating            Float        @default(0.0)
+  totalSales        Int          @default(0)
+  verifiedAt        DateTime?
 
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id])
-
-  products Product[]
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products      Product[]
+  verifications VendorVerification[]
+  reviews       Review[]
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  image       String?
+  products    Product[]
 }
 
 model Product {
-  id          String   @id @default(cuid())
-  name        String
-  description String
-  price       Float
-  quantity    Int
+  id             String           @id @default(cuid())
+  name           String
+  slug           String?
+  description    String
+  price          Float
+  compareAtPrice Float?
+  stock          Int
+  status         ProductStatus    @default(ACTIVE)
+  condition      ProductCondition @default(NEW)
+  locationZone   String           @default("Computer Village Ikeja")
+  images         String           @default("[]") // Stored as JSON string array
+  specs          String           @default("{}") // Stored as JSON string map
 
-  vendorId String
-  vendor   Vendor @relation(fields: [vendorId], references: [id])
+  vendorId   String
+  categoryId String
+
+  vendor   Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
+
+  reviews    Review[]
+  orderItems OrderItem[]
+  cartItems  CartItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Cart {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CartItem {
+  id        String @id @default(cuid())
+  cartId    String
+  productId String
+  quantity  Int    @default(1)
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique @default(cuid())
+  userId          String
+  status          OrderStatus @default(PENDING)
+  totalAmount     Float
+  shippingAddress String?
+
+  user    User        @relation(fields: [userId], references: [id])
+  items   OrderItem[]
+  payment Payment?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Float
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Payment {
+  id               String        @id @default(cuid())
+  orderId          String        @unique
+  provider         String        @default("MOCK")
+  reference        String        @unique
+  amount           Float
+  status           PaymentStatus @default(PENDING)
+  authorizationUrl String?
+  verifiedAt       DateTime?
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 }
 
-model Order {
-  id          String   @id @default(cuid())
-  totalAmount Float
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int
+  comment   String
+  userId    String
+  productId String
+  vendorId  String?
 
-  userId String
-  user   User @relation(fields: [userId], references: [id])
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  vendor  Vendor? @relation(fields: [vendorId], references: [id])
 
   createdAt DateTime @default(now())
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  subject   String?
+  messages  Message[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Message {
+  id             String @id @default(cuid())
+  conversationId String
+  senderId       String
+  receiverId     String
+  content        String
+  read           Boolean @default(false)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver     User         @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType @default(SYSTEM)
+  title     String
+  message   String
+  link      String?
+  read      Boolean          @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model VendorVerification {
+  id           String             @id @default(cuid())
+  vendorId     String
+  documentType String
+  documentUrl  String
+  status       VerificationStatus @default(PENDING)
+  adminNotes   String?
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

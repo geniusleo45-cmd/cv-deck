@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CV Deck
 
-## Getting Started
+CV Deck is a Computer Village marketplace built with Next.js, Prisma, Neon PostgreSQL, NextAuth credentials authentication, and Flutterwave checkout.
 
-First, run the development server:
+## Included features
+
+- Customer, vendor, recruiter, and administrator roles
+- Marketplace search, filtering, pagination, product details, and verified reviews
+- Persistent customer carts, checkout, Flutterwave hosted payment, and webhook verification
+- Customer order tracking and vendor fulfillment workflow
+- Direct messages, notifications, vendor verification, and role-based dashboards
+
+## Local setup
+
+1. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+2. Copy `.env.example` to `.env` and replace every placeholder. Never commit `.env`.
+
+3. Generate the Prisma client and apply the project migrations to your development database:
+
+   ```bash
+   npx prisma generate
+   npx prisma migrate deploy
+   ```
+
+4. Start the app:
+
+   ```bash
+   npm run dev
+   ```
+
+   Open `http://localhost:3000`.
+
+## Quality checks
+
+Run these before deploying:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run lint
+npx tsc --noEmit
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+To serve a completed production build locally:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm start
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment variables
 
-## Learn More
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | Neon PostgreSQL pooled connection URL |
+| `DIRECT_URL` | Direct PostgreSQL URL used by Prisma migrations |
+| `NEXTAUTH_URL` | Public app URL, for example `https://app.example.com` |
+| `NEXTAUTH_SECRET` | Long, randomly generated NextAuth secret |
+| `FLW_SECRET_KEY` | Flutterwave test or live secret key |
+| `FLW_WEBHOOK_SECRET_HASH` | Flutterwave webhook secret hash |
 
-To learn more about Next.js, take a look at the following resources:
+Use test Flutterwave credentials only in development. Configure live keys only in the production host’s encrypted environment settings.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Flutterwave webhook
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+After deployment, set the Flutterwave webhook URL to:
 
-## Deploy on Vercel
+```text
+https://YOUR_DOMAIN/api/webhooks/flutterwave
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Set the same webhook secret hash in Flutterwave and in `FLW_WEBHOOK_SECRET_HASH`. The webhook verifies transactions server-side before marking a payment successful and moving the order to Processing.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deployment checklist
+
+1. Create a production Neon database and set `DATABASE_URL` and `DIRECT_URL` on the hosting provider.
+2. Set all variables from `.env.example` in the hosting provider; do not upload the `.env` file.
+3. Run `npx prisma migrate deploy` against the production database as part of the release process.
+4. Confirm `npm run lint`, `npx tsc --noEmit`, and `npm run build` pass.
+5. Deploy, then set the Flutterwave callback/webhook configuration to the public HTTPS domain.
+6. Make one sandbox payment and confirm the order becomes Processing before switching to Flutterwave live credentials.

@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
     const validPassword = await bcrypt.compare(
       password,
-      user.passwordHash
+      user.password
     );
 
     if (!validPassword) {
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
       success: true,
       user: {
         id: user.id,
-        fullName: user.fullName,
+        name: user.name,
         email: user.email,
         role: user.role,
       },

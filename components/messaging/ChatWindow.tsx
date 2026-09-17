@@ -1,0 +1,244 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Send, User, MessageSquare, ShieldCheck, RefreshCw } from "lucide-react";
+
+interface Message {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  content: string;
+  createdAt: string;
+  sender: { id: string; name: string; avatar?: string; role: string };
+}
+
+interface Conversation {
+  id: string;
+  subject?: string;
+  updatedAt: string;
+  messages: Message[];
+}
+
+export function ChatWindow({ initialReceiverId }: { initialReceiverId?: string }) {
+  const { data: session } = useSession();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputText, setInputText] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+
+  const fetchConversations = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/messages");
+      if (res.ok) {
+        const data = await res.json();
+        setConversations(data);
+        if (data.length > 0) setSelectedConversation((current) => current ?? data[0]);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchConversations();
+  }, [fetchConversations]);
+
+  const fetchMessages = async (convId: string) => {
+    try {
+      const res = await fetch(`/api/messages/${convId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedConversation) {
+      fetchMessages(selectedConversation.id);
+      const interval = setInterval(() => fetchMessages(selectedConversation.id), 5000);
+      return () => clearInterval(interval);
+    }
+  }, [selectedConversation]);
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputText.trim() || !session?.user) return;
+
+    try {
+      setSending(true);
+      if (selectedConversation) {
+        // Reply to selected conversation
+        const lastMsg = selectedConversation.messages[0];
+        const otherUserId = lastMsg.senderId === session.user.id ? lastMsg.receiverId : lastMsg.senderId;
+
+        const res = await fetch(`/api/messages/${selectedConversation.id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: inputText,
+            receiverId: otherUserId,
+          }),
+        });
+
+        if (res.ok) {
+          setInputText("");
+          fetchMessages(selectedConversation.id);
+          fetchConversations();
+        }
+      } else if (initialReceiverId) {
+        // Start new conversation
+        const res = await fetch("/api/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            receiverId: initialReceiverId,
+            content: inputText,
+          }),
+        });
+
+        if (res.ok) {
+          setInputText("");
+          fetchConversations();
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="flex h-[600px] w-full rounded-2xl border bg-white dark:bg-gray-900 overflow-hidden shadow-sm">
+      {/* Left List of Conversations */}
+      <div className="w-1/3 border-r flex flex-col bg-gray-50/50 dark:bg-gray-900/50">
+        <div className="p-4 border-b flex items-center justify-between">
+          <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <MessageSquare className="h-4 w-4 text-blue-600" /> Messages
+          </h3>
+          <Button variant="ghost" size="icon" onClick={fetchConversations} className="h-8 w-8">
+            <RefreshCw className={`h-3.5 w-3.5 text-gray-500 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto divide-y">
+          {conversations.length === 0 ? (
+            <div className="p-6 text-center text-xs text-gray-500">
+              No active message threads yet. Start a conversation with a vendor!
+            </div>
+          ) : (
+            conversations.map((conv) => {
+              const lastMsg = conv.messages[0] as any;
+              const otherUser = lastMsg?.senderId === session?.user?.id ? lastMsg?.receiver : lastMsg?.sender;
+              const isSelected = selectedConversation?.id === conv.id;
+
+              return (
+                <div
+                  key={conv.id}
+                  onClick={() => setSelectedConversation(conv)}
+                  className={`p-3.5 cursor-pointer transition-colors flex items-center gap-3 ${
+                    isSelected
+                      ? "bg-blue-50 dark:bg-blue-950/40 border-l-4 border-blue-600"
+                      : "hover:bg-gray-100/80 dark:hover:bg-gray-800/50"
+                  }`}
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-700 font-bold text-xs shrink-0">
+                    {otherUser?.name ? otherUser.name.slice(0, 2).toUpperCase() : "CV"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between text-xs font-semibold text-gray-900 dark:text-gray-100">
+                      <span className="truncate">{otherUser?.name || "Marketplace User"}</span>
+                      <span className="text-[10px] text-gray-400 font-normal">
+                        {new Date(conv.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 truncate mt-0.5">
+                      {lastMsg?.content || "No messages"}
+                    </p>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* Right Chat Thread View */}
+      <div className="flex-1 flex flex-col justify-between bg-white dark:bg-gray-900">
+        {selectedConversation ? (
+          <>
+            {/* Thread Header */}
+            <div className="p-4 border-b flex items-center justify-between bg-gray-50/30 dark:bg-gray-900/30">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white font-bold text-xs">
+                  <User className="h-4 w-4" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-white">
+                    {selectedConversation.subject || "Computer Village Inquiry"}
+                  </h4>
+                  <span className="text-[11px] text-gray-500">Live Encrypted Thread</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Message Bubble List */}
+            <div className="flex-1 p-4 overflow-y-auto space-y-3">
+              {messages.map((msg) => {
+                const isMe = msg.senderId === session?.user?.id;
+                return (
+                  <div
+                    key={msg.id}
+                    className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}
+                  >
+                    <div
+                      className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-xs sm:text-sm shadow-sm ${
+                        isMe
+                          ? "bg-blue-600 text-white rounded-br-none"
+                          : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-none"
+                      }`}
+                    >
+                      <p>{msg.content}</p>
+                    </div>
+                    <span className="text-[10px] text-gray-400 mt-1 px-1">
+                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Message Input Box */}
+            <form onSubmit={handleSend} className="p-3 border-t flex items-center gap-2">
+              <Input
+                placeholder="Type your message..."
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                className="text-sm rounded-xl"
+              />
+              <Button type="submit" disabled={sending || !inputText.trim()} size="icon" className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl">
+                <Send className="h-4 w-4" />
+              </Button>
+            </form>
+          </>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-gray-500 space-y-3">
+            <MessageSquare className="h-12 w-12 text-gray-300" />
+            <p className="font-medium text-sm">Select a conversation to start chatting</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
