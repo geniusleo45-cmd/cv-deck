@@ -5,6 +5,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Store, ShieldCheck, MapPin, Star, MessageSquare } from "lucide-react";
 
+// Vendor ratings and inventory counts come from the live marketplace database.
+export const dynamic = "force-dynamic";
+
 export default async function PublicVendorsPage() {
   const vendors = await prisma.vendor.findMany({
     include: {
