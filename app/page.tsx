@@ -16,6 +16,9 @@ import {
   Search,
 } from "lucide-react";
 
+// The homepage shows live marketplace data, so it must not query Neon during Vercel's build-time prerender.
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const [categories, featuredProducts, verifiedVendorsCount] = await Promise.all([
     prisma.category.findMany({ take: 6 }),
