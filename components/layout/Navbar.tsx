@@ -5,34 +5,12 @@ import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { CartSheet } from "@/components/cart/CartSheet";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Laptop, User, ShieldCheck, ShoppingBag, LogOut, LayoutDashboard, Briefcase, Store } from "lucide-react";
+import { Laptop, LogOut, Briefcase, Store } from "lucide-react";
 
 export function Navbar() {
   const { data: session } = useSession();
   const user = session?.user;
-
-  const getDashboardLink = () => {
-    if (!user) return "/dashboard";
-    switch (user.role) {
-      case "ADMIN":
-        return "/dashboard/admin";
-      case "VENDOR":
-        return "/dashboard/vendor";
-      case "RECRUITER":
-        return "/dashboard/recruiter";
-      default:
-        return "/dashboard/customer";
-    }
-  };
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-white/95 dark:bg-gray-950/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
@@ -81,52 +59,29 @@ export function Navbar() {
           {session ? (
             <>
               <NotificationBell />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                    <Avatar className="h-9 w-9 border border-gray-200">
-                      <AvatarImage src={user?.image || ""} alt={user?.name || "User"} />
-                      <AvatarFallback className="bg-blue-600 text-white font-bold text-xs">
-                        {user?.name ? user.name.slice(0, 2).toUpperCase() : "CV"}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-semibold leading-none">{user?.name}</p>
-                      <p className="text-xs leading-none text-gray-500">{user?.email}</p>
-                      <span className="mt-1 inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/50 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:text-blue-300 uppercase">
-                        {user?.role}
-                      </span>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href={getDashboardLink()} className="cursor-pointer flex items-center gap-2">
-                      <LayoutDashboard className="h-4 w-4" /> Dashboard
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/profile" className="cursor-pointer flex items-center gap-2">
-                      <User className="h-4 w-4" /> Profile Settings
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/orders" className="cursor-pointer flex items-center gap-2">
-                      <ShoppingBag className="h-4 w-4" /> My Orders
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => signOut({ callbackUrl: "/" })}
-                    className="cursor-pointer text-red-600 focus:text-red-600 flex items-center gap-2"
-                  >
-                    <LogOut className="h-4 w-4" /> Log out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button
+                variant="ghost"
+                className="relative h-9 w-9 rounded-full"
+                asChild
+              >
+                <Link href="/dashboard/profile" aria-label="Open profile settings">
+                  <Avatar className="h-9 w-9 border border-gray-200">
+                    <AvatarImage src={user?.image || ""} alt={user?.name || "User"} />
+                    <AvatarFallback className="bg-blue-600 text-white font-bold text-xs">
+                      {user?.name ? user.name.slice(0, 2).toUpperCase() : "CV"}
+                    </AvatarFallback>
+                  </Avatar>
+                </Link>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => signOut({ callbackUrl: "/" })}
+                aria-label="Log out"
+                className="text-gray-600 hover:text-red-600"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
             </>
           ) : (
             <div className="flex items-center gap-2">

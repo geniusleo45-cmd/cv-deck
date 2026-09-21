@@ -30,20 +30,20 @@ export function DashboardSidebar() {
       case "ADMIN":
         return [
           { href: "/dashboard/admin", label: "Overview", icon: LayoutDashboard },
-          { href: "/dashboard/admin?tab=verifications", label: "Vendor Verification Queue", icon: ShieldCheck },
-          { href: "/dashboard/admin?tab=users", label: "User Management", icon: Users },
-          { href: "/dashboard/admin?tab=products", label: "Marketplace Products", icon: Package },
-          { href: "/dashboard/admin?tab=orders", label: "Global Orders", icon: ShoppingBag },
-          { href: "/dashboard/admin?tab=analytics", label: "Analytics & Reports", icon: BarChart3 },
+          { href: "/dashboard/admin/verifications", label: "Vendor Verification Queue", icon: ShieldCheck },
+          { href: "/dashboard/admin/users", label: "User Management", icon: Users },
+          { href: "/dashboard/admin/products", label: "Marketplace Products", icon: Package },
+          { href: "/dashboard/admin/orders", label: "Global Orders", icon: ShoppingBag },
+          { href: "/dashboard/admin/analytics", label: "Analytics & Reports", icon: BarChart3 },
           { href: "/dashboard/messages", label: "Messages", icon: MessageSquare },
           { href: "/dashboard/profile", label: "Settings", icon: Settings },
         ];
       case "VENDOR":
         return [
           { href: "/dashboard/vendor", label: "Vendor Dashboard", icon: LayoutDashboard },
-          { href: "/dashboard/vendor?tab=products", label: "My Inventory", icon: Package },
-          { href: "/dashboard/vendor?tab=orders", label: "Customer Orders", icon: ShoppingBag },
-          { href: "/dashboard/vendor?tab=verification", label: "Verification Status", icon: ShieldCheck },
+          { href: "/dashboard/vendor/products", label: "My Inventory", icon: Package },
+          { href: "/dashboard/vendor/orders", label: "Customer Orders", icon: ShoppingBag },
+          { href: "/dashboard/vendor/verification", label: "Verification Status", icon: ShieldCheck },
           { href: "/dashboard/messages", label: "Messages & Inquiries", icon: MessageSquare },
           { href: "/dashboard/profile", label: "Business Profile", icon: User },
         ];
@@ -106,7 +106,7 @@ export function DashboardSidebar() {
             Have new tech stock?
           </p>
           <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-1" asChild>
-            <Link href="/dashboard/vendor?action=add-product">
+          <Link href="/dashboard/vendor/products/new">
               <PlusCircle className="h-3.5 w-3.5" /> Add Product
             </Link>
           </Button>

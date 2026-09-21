@@ -71,7 +71,7 @@ export default async function VendorDashboardPage() {
         </div>
 
         <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white font-bold shrink-0 shadow-md gap-2" asChild>
-          <Link href="/dashboard/vendor?action=add-product">
+          <Link href="/dashboard/vendor/products/new">
             <PlusCircle className="h-5 w-5" /> Add New Inventory
           </Link>
         </Button>
@@ -90,7 +90,7 @@ export default async function VendorDashboardPage() {
             </div>
           </div>
           <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white font-bold shrink-0" asChild>
-            <Link href="/dashboard/vendor?tab=verification">Submit Verification Docs</Link>
+            <Link href="/dashboard/vendor/verification">Submit Verification Docs</Link>
           </Button>
         </div>
       )}
