@@ -15,7 +15,7 @@ export default function CartPage() {
 
   const [shippingAddress, setShippingAddress] = useState("");
   const [phone, setPhone] = useState("");
-  const paymentProvider = "FLUTTERWAVE";
+  const [paymentProvider, setPaymentProvider] = useState<"FLUTTERWAVE" | "PAYSTACK">("FLUTTERWAVE");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -56,13 +56,13 @@ export default function CartPage() {
       if (!res.ok) {
         setError(data.error || "Checkout failed");
       } else {
-        const paymentResponse = await fetch("/api/payments/flutterwave/initialize", {
+        const paymentResponse = await fetch(`/api/payments/${paymentProvider.toLowerCase()}/initialize`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ orderId: data.order.id }),
         });
         const payment = await paymentResponse.json();
-        if (!paymentResponse.ok) throw new Error(payment.error || "Order created, but Flutterwave checkout could not be opened.");
+        if (!paymentResponse.ok) throw new Error(payment.error || `Order created, but ${paymentProvider === "PAYSTACK" ? "Paystack" : "Flutterwave"} checkout could not be opened.`);
         clearCart();
         window.location.assign(payment.authorizationUrl);
       }
@@ -196,8 +196,20 @@ export default function CartPage() {
               />
             </div>
 
+            <fieldset className="space-y-2">
+              <legend className="text-xs font-bold text-gray-700 dark:text-gray-300">Payment method</legend>
+              <label className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-xs transition ${paymentProvider === "FLUTTERWAVE" ? "border-blue-500 bg-blue-50 dark:border-blue-700 dark:bg-blue-950/30" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}>
+                <input type="radio" name="paymentProvider" value="FLUTTERWAVE" checked={paymentProvider === "FLUTTERWAVE"} onChange={() => setPaymentProvider("FLUTTERWAVE")} className="accent-blue-600" />
+                <span><strong className="block text-sm">Flutterwave</strong>Card, bank transfer, USSD, and more.</span>
+              </label>
+              <label className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-xs transition ${paymentProvider === "PAYSTACK" ? "border-blue-500 bg-blue-50 dark:border-blue-700 dark:bg-blue-950/30" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}>
+                <input type="radio" name="paymentProvider" value="PAYSTACK" checked={paymentProvider === "PAYSTACK"} onChange={() => setPaymentProvider("PAYSTACK")} className="accent-blue-600" />
+                <span><strong className="block text-sm">Paystack</strong>Secure card, bank transfer, USSD, and mobile money payments.</span>
+              </label>
+            </fieldset>
+
             <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
-              You&apos;ll complete this order securely in Flutterwave&apos;s sandbox checkout.
+              You&apos;ll complete this order securely through {paymentProvider === "PAYSTACK" ? "Paystack" : "Flutterwave"}.
             </div>
 
             <div className="pt-3 border-t space-y-2">

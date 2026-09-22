@@ -169,7 +169,7 @@ export default async function OrdersPage() {
               {order.status === "PENDING" && order.payment?.status !== "SUCCESS" && (
                 <div className="flex flex-wrap justify-end gap-2">
                   <CancelPendingOrderButton orderId={order.id} />
-                  <PayOrderButton orderId={order.id} />
+                  <PayOrderButton orderId={order.id} provider={order.payment?.provider === "PAYSTACK" ? "PAYSTACK" : "FLUTTERWAVE"} />
                 </div>
               )}
             </div>

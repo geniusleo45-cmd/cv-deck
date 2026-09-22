@@ -44,7 +44,8 @@ export function NewProductForm({ categories }: { categories: { id: string; name:
     }
     try {
       setError("");
-      setImages((current) => [...current, ...(await Promise.all(files.map(readImage)))]);
+      const uploadedImages = await Promise.all(files.map(readImage));
+      setImages((current) => [...current, ...uploadedImages]);
     } catch {
       setError("One or more images could not be read. Please try again.");
     }
