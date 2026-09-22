@@ -3,7 +3,8 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, RotateCcw } from "lucide-react";
+import { Search, Filter, RotateCcw, ChevronDown, ChevronRight } from "lucide-react";
+import { useState } from "react";
 
 interface FilterSidebarProps {
   categories: { id: string; name: string; slug: string }[];
@@ -25,6 +26,7 @@ export function FilterSidebar({
   onFilterChange,
   onReset,
 }: FilterSidebarProps) {
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
   const locationZones = [
     "All Zones",
     "Pepple Street",
@@ -68,10 +70,18 @@ export function FilterSidebar({
 
       {/* Category Filter */}
       <div className="space-y-2">
-        <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-          Category
-        </Label>
-        <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
+        <button
+          type="button"
+          onClick={() => setCategoriesOpen((open) => !open)}
+          className="flex w-full items-center justify-between rounded-lg px-1 py-1 text-left text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
+          aria-expanded={categoriesOpen}
+          aria-controls="marketplace-categories"
+        >
+          <span>Category{filters.categoryId ? " (selected)" : ""}</span>
+          {categoriesOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </button>
+        {categoriesOpen && (
+        <div id="marketplace-categories" className="space-y-1 max-h-48 overflow-y-auto pr-1">
           <button
             onClick={() => onFilterChange("categoryId", "")}
             className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
@@ -96,6 +106,7 @@ export function FilterSidebar({
             </button>
           ))}
         </div>
+        )}
       </div>
 
       {/* Condition Filter */}

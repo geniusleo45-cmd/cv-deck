@@ -12,7 +12,10 @@ export const vendorUpdateSchema = z.object({
 
 export const verificationSubmitSchema = z.object({
   documentType: z.string().min(2, "Document type is required (e.g., CAC, Govt ID, Utility Bill)"),
-  documentUrl: z.string().min(5, "Document URL or reference is required"),
+  documentUrl: z.string().refine(
+    (value) => value.startsWith("data:application/pdf") || value.startsWith("data:image/"),
+    "Upload a valid PDF or image document",
+  ),
 });
 
 export const adminVerifyVendorSchema = z.object({

@@ -10,7 +10,12 @@ export const productSchema = z.object({
   status: z.enum(["ACTIVE", "INACTIVE", "SOLD_OUT"]).default("ACTIVE"),
   condition: z.enum(["NEW", "REFURBISHED", "USED"]).default("NEW"),
   locationZone: z.string().default("Computer Village Ikeja"),
-  images: z.array(z.string().url("Invalid image URL")).default([]),
+  images: z.array(
+    z.string().refine(
+      (value) => value.startsWith("data:image/") || /^https:\/\//i.test(value),
+      "Invalid image source",
+    ),
+  ).default([]),
   specs: z.record(z.string(), z.string()).default({}),
 });
 
