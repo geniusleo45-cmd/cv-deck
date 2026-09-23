@@ -1,0 +1,21 @@
+"use client";
+
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import { AlertTriangle, PackageSearch, Search } from "lucide-react";
+
+type Product = { id: string; name: string; category: string; price: number; stock: number; status: string };
+
+export function InventoryTable({ products }: { products: Product[] }) {
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<"ALL" | "LOW" | "ACTIVE" | "INACTIVE">("ALL");
+  const lowStock = products.filter((product) => product.stock > 0 && product.stock <= 5).length;
+  const outOfStock = products.filter((product) => product.stock === 0).length;
+  const visibleProducts = useMemo(() => products.filter((product) => {
+    const matchesQuery = product.name.toLowerCase().includes(query.toLowerCase()) || product.category.toLowerCase().includes(query.toLowerCase());
+    const matchesFilter = filter === "ALL" || (filter === "LOW" && product.stock <= 5) || product.status === filter;
+    return matchesQuery && matchesFilter;
+  }), [filter, products, query]);
+
+  return <div className="space-y-4"><div className="grid gap-3 sm:grid-cols-3"><div className="rounded-xl border bg-white p-4 dark:bg-gray-900"><p className="text-xs font-bold uppercase tracking-wide text-gray-500">Listed products</p><p className="mt-1 text-2xl font-black">{products.length}</p></div><div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/20"><p className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-amber-800 dark:text-amber-300"><AlertTriangle className="h-3.5 w-3.5" /> Low stock</p><p className="mt-1 text-2xl font-black text-amber-800 dark:text-amber-300">{lowStock}</p></div><div className="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/20"><p className="text-xs font-bold uppercase tracking-wide text-red-800 dark:text-red-300">Out of stock</p><p className="mt-1 text-2xl font-black text-red-800 dark:text-red-300">{outOfStock}</p></div></div><div className="flex flex-col gap-3 rounded-2xl border bg-white p-4 dark:bg-gray-900 sm:flex-row sm:items-center sm:justify-between"><label className="relative block sm:w-80"><Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search inventory" className="w-full rounded-lg border py-2 pl-9 pr-3 text-sm dark:bg-gray-800" /></label><div className="flex flex-wrap gap-2">{(["ALL", "LOW", "ACTIVE", "INACTIVE"] as const).map((item) => <button key={item} type="button" onClick={() => setFilter(item)} className={`rounded-lg px-3 py-2 text-xs font-bold ${filter === item ? "bg-blue-600 text-white" : "border text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"}`}>{item === "LOW" ? "Low stock" : item[0] + item.slice(1).toLowerCase()}</button>)}</div></div><div className="overflow-x-auto rounded-2xl border bg-white dark:bg-gray-900"><table className="w-full text-left text-sm"><thead><tr className="border-b text-xs text-gray-500"><th className="p-4">Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th className="pr-4">Action</th></tr></thead><tbody>{visibleProducts.map((product) => <tr key={product.id} className="border-b last:border-0"><td className="p-4 font-semibold">{product.name}</td><td>{product.category}</td><td>₦{product.price.toLocaleString()}</td><td><span className={`font-bold ${product.stock === 0 ? "text-red-600" : product.stock <= 5 ? "text-amber-600" : "text-emerald-600"}`}>{product.stock}</span>{product.stock <= 5 && <span className="ml-1 text-xs text-gray-500">units</span>}</td><td><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${product.status === "ACTIVE" ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"}`}>{product.status}</span></td><td className="pr-4"><Link href={`/dashboard/vendor/products/${product.id}`} className="font-bold text-blue-600 hover:underline">Edit</Link></td></tr>)}</tbody></table>{!visibleProducts.length && <div className="p-10 text-center text-sm text-gray-500"><PackageSearch className="mx-auto mb-2 h-8 w-8 text-gray-300" />No inventory matches this filter.</div>}</div></div>;
+}
