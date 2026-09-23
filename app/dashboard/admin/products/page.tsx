@@ -1,3 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
-export default async function AdminProductsPage() { await requireAdmin(); const products = await prisma.product.findMany({ include: { vendor: true, category: true }, orderBy: { createdAt: "desc" } }); return <section className="space-y-6"><div><h1 className="text-2xl font-black">Marketplace products</h1><p className="mt-1 text-sm text-gray-500">Review active listings, inventory, and vendor ownership.</p></div><div className="overflow-x-auto rounded-2xl border bg-white dark:bg-gray-900"><table className="w-full text-left text-sm"><thead><tr className="border-b text-xs text-gray-500"><th className="p-4">Product</th><th>Vendor</th><th>Category</th><th>Stock</th><th>Status</th></tr></thead><tbody>{products.map((product) => <tr key={product.id} className="border-b last:border-0"><td className="p-4 font-semibold">{product.name}</td><td>{product.vendor.businessName}</td><td>{product.category.name}</td><td>{product.stock}</td><td>{product.status}</td></tr>)}</tbody></table></div></section>; }
+import { ProductModerationTable } from "./ProductModerationTable";
+
+export default async function AdminProductsPage() {
+  await requireAdmin();
+  const products = await prisma.product.findMany({ include: { vendor: true, category: true }, orderBy: { createdAt: "desc" } });
+  return <section className="space-y-6"><div><h1 className="text-2xl font-black">Marketplace products</h1><p className="mt-1 text-sm text-gray-500">Review listings and control which products are available in the marketplace.</p></div><ProductModerationTable products={products.map((product) => ({ id: product.id, name: product.name, vendor: product.vendor.businessName, category: product.category.name, price: product.price, stock: product.stock, status: product.status, createdAt: product.createdAt.toISOString() }))} /></section>;
+}
