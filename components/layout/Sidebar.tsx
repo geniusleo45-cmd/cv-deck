@@ -46,7 +46,7 @@ export function DashboardSidebar() {
           { href: "/dashboard/vendor/orders", label: "Customer Orders", icon: ShoppingBag },
           { href: "/dashboard/vendor/verification", label: "Verification Status", icon: ShieldCheck },
           { href: "/dashboard/messages", label: "Messages & Inquiries", icon: MessageSquare },
-          { href: "/dashboard/profile", label: "Business Profile", icon: User },
+          { href: "/dashboard/vendor/profile", label: "Business Profile", icon: User },
         ];
       case "RECRUITER":
         return [
