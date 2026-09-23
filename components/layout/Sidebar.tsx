@@ -54,7 +54,7 @@ export function DashboardSidebar() {
           { href: "/vendors", label: "Vendor Directory", icon: Store },
           { href: "/dashboard/messages", label: "Direct Inquiries", icon: MessageSquare },
           { href: "/dashboard/orders", label: "Corporate Orders", icon: ShoppingBag },
-          { href: "/dashboard/profile", label: "Company Profile", icon: User },
+          { href: "/dashboard/recruiter/profile", label: "Company Profile", icon: User },
         ];
       default: // CUSTOMER
         return [
