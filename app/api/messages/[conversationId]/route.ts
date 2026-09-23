@@ -15,7 +15,7 @@ export async function GET(
     const { conversationId } = await params;
 
     const messages = await prisma.message.findMany({
-      where: { conversationId },
+      where: { conversationId, OR: [{ senderId: sessionUser.id }, { receiverId: sessionUser.id }] },
       include: {
         sender: { select: { id: true, name: true, avatar: true, role: true } },
         receiver: { select: { id: true, name: true, avatar: true, role: true } },
@@ -55,6 +55,9 @@ export async function POST(
     if (!content || !receiverId) {
       return NextResponse.json({ error: "Content and receiverId are required" }, { status: 400 });
     }
+
+    const participant = await prisma.message.findFirst({ where: { conversationId, OR: [{ senderId: sessionUser.id }, { receiverId: sessionUser.id }] }, select: { id: true } });
+    if (!participant || receiverId === sessionUser.id) return NextResponse.json({ error: "You cannot send messages in this conversation." }, { status: 403 });
 
     const message = await prisma.message.create({
       data: {

@@ -38,14 +38,14 @@ export function ChatWindow({ initialReceiverId }: { initialReceiverId?: string }
       if (res.ok) {
         const data = await res.json();
         setConversations(data);
-        if (data.length > 0) setSelectedConversation((current) => current ?? data[0]);
+        if (data.length > 0) setSelectedConversation((current) => current ?? (initialReceiverId ? data.find((conversation: Conversation) => conversation.messages[0]?.senderId === initialReceiverId || conversation.messages[0]?.receiverId === initialReceiverId) ?? null : data[0]));
       }
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [initialReceiverId]);
 
   useEffect(() => {
     fetchConversations();
@@ -108,7 +108,9 @@ export function ChatWindow({ initialReceiverId }: { initialReceiverId?: string }
         });
 
         if (res.ok) {
+          const message = await res.json();
           setInputText("");
+          setSelectedConversation({ id: message.conversationId, subject: "Computer Village Inquiry", updatedAt: new Date().toISOString(), messages: [message] });
           fetchConversations();
         }
       }
@@ -176,7 +178,7 @@ export function ChatWindow({ initialReceiverId }: { initialReceiverId?: string }
 
       {/* Right Chat Thread View */}
       <div className="flex-1 flex flex-col justify-between bg-white dark:bg-gray-900">
-        {selectedConversation ? (
+        {selectedConversation || initialReceiverId ? (
           <>
             {/* Thread Header */}
             <div className="p-4 border-b flex items-center justify-between bg-gray-50/30 dark:bg-gray-900/30">
@@ -186,7 +188,7 @@ export function ChatWindow({ initialReceiverId }: { initialReceiverId?: string }
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-gray-900 dark:text-white">
-                    {selectedConversation.subject || "Computer Village Inquiry"}
+                    {selectedConversation?.subject || "New conversation"}
                   </h4>
                   <span className="text-[11px] text-gray-500">Live Encrypted Thread</span>
                 </div>
@@ -195,7 +197,7 @@ export function ChatWindow({ initialReceiverId }: { initialReceiverId?: string }
 
             {/* Message Bubble List */}
             <div className="flex-1 p-4 overflow-y-auto space-y-3">
-              {messages.map((msg) => {
+              {selectedConversation ? messages.map((msg) => {
                 const isMe = msg.senderId === session?.user?.id;
                 return (
                   <div
@@ -216,7 +218,7 @@ export function ChatWindow({ initialReceiverId }: { initialReceiverId?: string }
                     </span>
                   </div>
                 );
-              })}
+              }) : <p className="py-8 text-center text-sm text-gray-500">Send a message to start this conversation.</p>}
             </div>
 
             {/* Message Input Box */}

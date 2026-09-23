@@ -15,7 +15,7 @@ export function NotificationList({ notifications: initialNotifications }: { noti
   async function markRead(id?: string) {
     setUpdating(true);
     const response = await fetch("/api/notifications", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(id ? { id } : {}) });
-    if (response.ok) setNotifications((current) => current.map((notification) => id && notification.id !== id ? notification : { ...notification, read: true }));
+    if (response.ok) { setNotifications((current) => current.map((notification) => id && notification.id !== id ? notification : { ...notification, read: true })); window.dispatchEvent(new Event("notifications-updated")); }
     setUpdating(false);
   }
 
