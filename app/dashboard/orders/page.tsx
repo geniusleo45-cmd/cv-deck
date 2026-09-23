@@ -116,6 +116,7 @@ export default async function OrdersPage() {
                 <div className="text-right">
                   <span className="text-xs text-gray-500 block">Total Amount</span>
                   <span className="text-xl font-black text-blue-600">₦{order.totalAmount.toLocaleString()}</span>
+                  <Link href={`/dashboard/orders/${order.id}`} className="mt-2 block text-xs font-bold text-blue-600 hover:underline">View order details</Link>
                 </div>
               </div>
 
