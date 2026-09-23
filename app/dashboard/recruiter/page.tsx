@@ -107,7 +107,7 @@ export default async function RecruiterDashboardPage() {
               <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 pt-2 border-t">
                 <span>{v._count.products} Products Listed</span>
                 <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs gap-1" asChild>
-                  <Link href={`/dashboard/messages?vendorId=${v.userId}`}>
+                  <Link href={`/dashboard/messages?receiverId=${v.userId}`}>
                     <MessageSquare className="h-3.5 w-3.5" /> Request Quote
                   </Link>
                 </Button>
