@@ -16,6 +16,7 @@ import {
   Settings,
   Briefcase,
   PlusCircle,
+  Heart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,7 @@ export function DashboardSidebar() {
           { href: "/dashboard/marketplace", label: "Browse Marketplace", icon: Store },
           { href: "/dashboard/orders", label: "My Orders & Tracking", icon: ShoppingBag },
           { href: "/dashboard/cart", label: "Shopping Cart", icon: Package },
+          { href: "/dashboard/wishlist", label: "Saved Products", icon: Heart },
           { href: "/dashboard/messages", label: "Messages", icon: MessageSquare },
           { href: "/dashboard/profile", label: "Account Settings", icon: Settings },
         ];

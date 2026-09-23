@@ -31,6 +31,10 @@ export default async function ProductDetailPage({
         },
         orderBy: { createdAt: "desc" },
       },
+      wishlistItems: {
+        where: { userId: sessionUser?.id || "__anonymous__" },
+        select: { id: true },
+      },
     },
   });
 
@@ -172,6 +176,7 @@ export default async function ProductDetailPage({
             reviews={product.reviews}
             sessionUserId={sessionUser?.id}
             canReview={canReview}
+            initiallyWishlisted={product.wishlistItems.length > 0}
           />
         </div>
       </div>

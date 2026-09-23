@@ -5,7 +5,7 @@ import { useCart } from "@/components/cart/CartProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShoppingBag, Star, CheckCircle } from "lucide-react";
+import { ShoppingBag, Star, CheckCircle, Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface ReviewItem {
@@ -24,6 +24,7 @@ export function ProductDetailClient({
   reviews,
   sessionUserId,
   canReview,
+  initiallyWishlisted,
 }: {
   productId: string;
   name: string;
@@ -32,6 +33,7 @@ export function ProductDetailClient({
   reviews: ReviewItem[];
   sessionUserId?: string;
   canReview: boolean;
+  initiallyWishlisted: boolean;
 }) {
   const { addItem } = useCart();
   const router = useRouter();
@@ -39,6 +41,8 @@ export function ProductDetailClient({
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [added, setAdded] = useState(false);
+  const [wishlisted, setWishlisted] = useState(initiallyWishlisted);
+  const [savingWishlist, setSavingWishlist] = useState(false);
 
   const handleAddToCart = () => {
     addItem({
@@ -78,10 +82,29 @@ export function ProductDetailClient({
     }
   };
 
+  const toggleWishlist = async () => {
+    if (!sessionUserId) {
+      router.push("/login");
+      return;
+    }
+    setSavingWishlist(true);
+    try {
+      const response = await fetch("/api/wishlist", {
+        method: wishlisted ? "DELETE" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId }),
+      });
+      if (!response.ok) throw new Error("Unable to update saved products.");
+      setWishlisted((current) => !current);
+    } finally {
+      setSavingWishlist(false);
+    }
+  };
+
   return (
     <div className="space-y-6 pt-4 border-t">
       {/* Add to Cart CTA */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <Button
           size="lg"
           disabled={stock <= 0}
@@ -102,6 +125,10 @@ export function ProductDetailClient({
               {stock > 0 ? `Add to Cart (Stock: ${stock})` : "Sold Out"}
             </>
           )}
+        </Button>
+        <Button type="button" variant="outline" size="lg" onClick={toggleWishlist} disabled={savingWishlist} className="gap-2 font-bold" aria-pressed={wishlisted}>
+          <Heart className={`h-5 w-5 ${wishlisted ? "fill-red-500 text-red-500" : ""}`} />
+          <span className="hidden sm:inline">{wishlisted ? "Saved" : "Save"}</span>
         </Button>
       </div>
 

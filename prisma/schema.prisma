@@ -78,6 +78,7 @@ model User {
   receivedMessages Message[]          @relation("ReceivedMessages")
   notifications    Notification[]
   cart             Cart?
+  wishlistItems    WishlistItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -155,6 +156,7 @@ model Product {
   reviews    Review[]
   orderItems OrderItem[]
   cartItems  CartItem[]
+  wishlistItems WishlistItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -179,6 +181,19 @@ model CartItem {
 
   cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
 }
 
 model Order {
