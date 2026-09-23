@@ -1,4 +1,9 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/rbac";
-export default async function Page() { const user = await requireAuth(); const notes = await prisma.notification.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" } }); return <section className="space-y-6"><div><h1 className="text-2xl font-black">Notifications</h1><p className="text-sm text-gray-500">Your latest marketplace activity.</p></div>{notes.map((note) => <Link key={note.id} href={note.link || "/dashboard"} className="block rounded-xl border bg-white p-4 dark:bg-gray-900"><p className="font-bold">{note.title}</p><p className="mt-1 text-sm text-gray-600">{note.message}</p></Link>)}{!notes.length && <p className="rounded-xl border p-6 text-gray-500">No notifications yet.</p>}</section>; }
+import { NotificationList } from "./NotificationList";
+
+export default async function Page() {
+  const user = await requireAuth();
+  const notifications = await prisma.notification.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" } });
+  return <section className="space-y-6"><div><h1 className="text-2xl font-black">Notifications</h1><p className="text-sm text-gray-500">Your latest marketplace activity.</p></div><NotificationList notifications={notifications.map((notification) => ({ ...notification, createdAt: notification.createdAt.toISOString() }))} /></section>;
+}
