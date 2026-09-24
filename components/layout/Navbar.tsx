@@ -5,6 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { CartSheet } from "@/components/cart/CartSheet";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Laptop, LogOut, Briefcase, Store } from "lucide-react";
 
@@ -54,6 +55,7 @@ export function Navbar() {
 
         {/* User Actions */}
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <CartSheet />
 
           {session ? (
