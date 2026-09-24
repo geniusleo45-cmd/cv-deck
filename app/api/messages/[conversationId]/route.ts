@@ -71,11 +71,18 @@ export async function POST(
       },
     });
 
-    // Update conversation timestamp
-    await prisma.conversation.update({
-      where: { id: conversationId },
-      data: { updatedAt: new Date() },
-    });
+    await Promise.all([
+      prisma.conversation.update({ where: { id: conversationId }, data: { updatedAt: new Date() } }),
+      prisma.notification.create({
+        data: {
+          userId: receiverId,
+          type: "MESSAGE",
+          title: `New message from ${sessionUser.name || "a CV Deck user"}`,
+          message: content.slice(0, 80) + (content.length > 80 ? "..." : ""),
+          link: "/dashboard/messages",
+        },
+      }),
+    ]);
 
     return NextResponse.json(message, { status: 201 });
   } catch (error) {
