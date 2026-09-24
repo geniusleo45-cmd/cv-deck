@@ -82,8 +82,12 @@ export function NewProductForm({ categories }: { categories: { id: string; name:
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSaving(true);
     setError("");
+    if (!images.length) {
+      setError("Upload at least one product image before creating the listing.");
+      return;
+    }
+    setSaving(true);
     const form = new FormData(event.currentTarget);
     const specs = Object.fromEntries(specifications.map(({ key, value }) => [key.trim(), value.trim()] as const).filter(([key, value]) => key && value));
     const response = await fetch("/api/products", {

@@ -15,7 +15,7 @@ export const productSchema = z.object({
       (value) => value.startsWith("data:image/") || /^https:\/\//i.test(value),
       "Invalid image source",
     ),
-  ).default([]),
+  ).min(1, "At least one product image is required").default([]),
   specs: z.record(z.string(), z.string()).default({}),
 });
 
