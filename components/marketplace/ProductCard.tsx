@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart/CartProvider";
-import { ShoppingBag, ShieldCheck, MapPin, Star, CheckCircle } from "lucide-react";
+import { ShoppingBag, ShieldCheck, MapPin, Star, CheckCircle, Heart } from "lucide-react";
 import { useState } from "react";
 
 interface ProductCardProps {
@@ -29,12 +29,15 @@ interface ProductCardProps {
     category?: {
       name: string;
     };
+    wishlistItems?: { id: string }[];
   };
 }
 
 export function ProductCard({ product }: ProductCardProps) {
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
+  const [saved, setSaved] = useState((product.wishlistItems?.length ?? 0) > 0);
+  const [saving, setSaving] = useState(false);
 
   let imageUrl = "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=600&q=80";
   try {
@@ -66,6 +69,23 @@ export function ProductCard({ product }: ProductCardProps) {
     window.setTimeout(() => setAdded(false), 1600);
   };
 
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const response = await fetch("/api/wishlist", {
+        method: saved ? "DELETE" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: product.id }),
+      });
+      if (!response.ok) throw new Error("Unable to update saved products.");
+      setSaved((current) => !current);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="group flex flex-col rounded-2xl border bg-white dark:bg-gray-900 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-200">
       {/* Product Image Header */}
@@ -87,6 +107,18 @@ export function ProductCard({ product }: ProductCardProps) {
             </Badge>
           )}
         </div>
+        <Button
+          type="button"
+          variant="secondary"
+          size="icon"
+          onClick={handleSave}
+          disabled={saving}
+          aria-label={saved ? `Remove ${product.name} from saved products` : `Save ${product.name}`}
+          aria-pressed={saved}
+          className="absolute right-3 top-3 h-9 w-9 rounded-full bg-white/95 text-gray-700 shadow-sm hover:bg-white dark:bg-gray-900/95 dark:text-gray-100"
+        >
+          <Heart className={`h-4 w-4 ${saved ? "fill-red-500 text-red-500" : ""}`} />
+        </Button>
       </div>
 
       {/* Product Details Content */}

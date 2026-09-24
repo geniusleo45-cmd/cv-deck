@@ -5,6 +5,7 @@ import { productSchema, productQuerySchema } from "@/lib/validations/product";
 
 export async function GET(req: Request) {
   try {
+    const currentUser = await getCurrentUser();
     const { searchParams } = new URL(req.url);
     const queryObj = Object.fromEntries(searchParams.entries());
     const validatedQuery = productQuerySchema.parse(queryObj);
@@ -59,6 +60,9 @@ export async function GET(req: Request) {
               rating: true,
             },
           },
+          wishlistItems: currentUser
+            ? { where: { userId: currentUser.id }, select: { id: true } }
+            : false,
         },
         orderBy: { createdAt: "desc" },
         skip,
