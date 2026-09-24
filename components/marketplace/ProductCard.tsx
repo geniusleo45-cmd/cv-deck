@@ -166,15 +166,29 @@ export function ProductCard({ product }: ProductCardProps) {
             )}
           </div>
 
-          <Button
-            size="sm"
-            disabled={product.stock <= 0 || added}
-            onClick={handleAddToCart}
-            className={`font-bold gap-1.5 shadow-sm text-white ${added ? "bg-emerald-600 hover:bg-emerald-700" : "bg-blue-600 hover:bg-blue-700"}`}
-          >
-            {added ? <CheckCircle className="h-4 w-4" /> : <ShoppingBag className="h-4 w-4" />}
-            {product.stock <= 0 ? "Sold Out" : added ? "Added" : "Add"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleSave}
+              disabled={saving}
+              aria-pressed={saved}
+              className="gap-1.5 font-bold"
+            >
+              <Heart className={`h-4 w-4 ${saved ? "fill-red-500 text-red-500" : ""}`} />
+              {saved ? "Saved" : "Save"}
+            </Button>
+            <Button
+              size="sm"
+              disabled={product.stock <= 0 || added}
+              onClick={handleAddToCart}
+              className={`font-bold gap-1.5 shadow-sm text-white ${added ? "bg-emerald-600 hover:bg-emerald-700" : "bg-blue-600 hover:bg-blue-700"}`}
+            >
+              {added ? <CheckCircle className="h-4 w-4" /> : <ShoppingBag className="h-4 w-4" />}
+              {product.stock <= 0 ? "Sold Out" : added ? "Added" : "Add"}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
