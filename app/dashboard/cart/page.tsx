@@ -26,6 +26,7 @@ export default function CartPage() {
         if (!response.ok) return;
         const profile = await response.json();
         if (profile.phone) setPhone(profile.phone);
+        if (profile.deliveryAddress) setShippingAddress(profile.deliveryAddress);
       } catch (error) {
         console.error("Failed to load saved contact details", error);
       }

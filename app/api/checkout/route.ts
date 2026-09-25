@@ -72,7 +72,7 @@ export async function POST(req: Request) {
       });
       await tx.user.update({
         where: { id: sessionUser.id },
-        data: { phone: validated.phone },
+        data: { phone: validated.phone, deliveryAddress: validated.shippingAddress },
       });
       return order;
     });

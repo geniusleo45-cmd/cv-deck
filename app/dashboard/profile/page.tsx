@@ -13,6 +13,7 @@ export default function ProfilePage() {
 
   const [name, setName] = useState(user?.name || "");
   const [phone, setPhone] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
   const [bio, setBio] = useState("");
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -25,6 +26,7 @@ export default function ProfilePage() {
         const data = await res.json();
         setName(data.name || "");
         setPhone(data.phone || "");
+        setDeliveryAddress(data.deliveryAddress || "");
         setBio(data.bio || "");
       }
     } catch (e) {
@@ -46,7 +48,7 @@ export default function ProfilePage() {
       const res = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone, bio }),
+        body: JSON.stringify({ name, phone, bio, deliveryAddress }),
       });
 
       if (res.ok) {
@@ -113,6 +115,12 @@ export default function ProfilePage() {
         <div className="space-y-1.5">
           <Label className="text-xs font-bold text-gray-700 dark:text-gray-300">Phone Number</Label>
           <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+234 801 234 5678" />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs font-bold text-gray-700 dark:text-gray-300">Default Delivery Address</Label>
+          <textarea value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} rows={2} placeholder="e.g. 14 Opebi Road, Ikeja, Lagos" className="w-full rounded-md border bg-white p-3 text-xs text-gray-900 dark:bg-gray-800 dark:text-gray-100" />
+          <p className="text-[11px] text-gray-500">This pre-fills checkout and can be changed for each order.</p>
         </div>
 
         <div className="space-y-1.5">
