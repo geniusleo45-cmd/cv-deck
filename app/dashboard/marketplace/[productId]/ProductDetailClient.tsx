@@ -5,7 +5,7 @@ import { useCart } from "@/components/cart/CartProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShoppingBag, Star, CheckCircle, Heart } from "lucide-react";
+import { ShoppingBag, Star, CheckCircle, Heart, Share2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ReportButton } from "@/components/ReportButton";
 
@@ -44,6 +44,7 @@ export function ProductDetailClient({
   const [added, setAdded] = useState(false);
   const [wishlisted, setWishlisted] = useState(initiallyWishlisted);
   const [savingWishlist, setSavingWishlist] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const handleAddToCart = () => {
     addItem({
@@ -102,6 +103,21 @@ export function ProductDetailClient({
     }
   };
 
+  const shareProduct = async () => {
+    const shareData = { title: `${name} | CV Deck`, text: `Take a look at ${name} on CV Deck.`, url: window.location.href };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        return;
+      }
+      await navigator.clipboard.writeText(shareData.url);
+      setLinkCopied(true);
+      window.setTimeout(() => setLinkCopied(false), 1800);
+    } catch (error) {
+      if ((error as Error).name !== "AbortError") console.error("Unable to share product", error);
+    }
+  };
+
   return (
     <div className="space-y-6 border-t pt-4 pb-20 lg:pb-0">
       {/* Add to Cart CTA */}
@@ -130,6 +146,10 @@ export function ProductDetailClient({
         <Button type="button" variant="outline" size="lg" onClick={toggleWishlist} disabled={savingWishlist} className="gap-2 font-bold" aria-pressed={wishlisted}>
           <Heart className={`h-5 w-5 ${wishlisted ? "fill-red-500 text-red-500" : ""}`} />
           <span className="hidden sm:inline">{wishlisted ? "Saved" : "Save"}</span>
+        </Button>
+        <Button type="button" variant="outline" size="lg" onClick={shareProduct} className="gap-2 font-bold" aria-label="Share product">
+          {linkCopied ? <CheckCircle className="h-5 w-5 text-emerald-600" /> : <Share2 className="h-5 w-5" />}
+          <span className="hidden sm:inline">{linkCopied ? "Link copied" : "Share"}</span>
         </Button>
       </div>
 
