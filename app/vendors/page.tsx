@@ -3,6 +3,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { CartProvider } from "@/components/cart/CartProvider";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { ReportButton } from "@/components/ReportButton";
 import { Store, ShieldCheck, MapPin, Star, MessageSquare } from "lucide-react";
 
 // Vendor ratings and inventory counts come from the live marketplace database.
@@ -61,7 +62,8 @@ export default async function PublicVendorsPage() {
                   </div>
                 </div>
 
-                <div className="pt-3 border-t flex items-center justify-between">
+                <div className="pt-3 border-t flex flex-wrap items-center justify-between gap-2">
+                  <ReportButton targetType="VENDOR" targetId={vendor.id} />
                   <Button size="sm" variant="outline" asChild>
                     <Link href={`/vendors/${vendor.id}`}>Visit Store</Link>
                   </Button>
