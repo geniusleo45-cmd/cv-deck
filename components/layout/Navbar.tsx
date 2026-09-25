@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { Laptop, LogOut, Briefcase, Store, Menu, LayoutDashboard, UserRound } fr
 export function Navbar() {
   const { data: session } = useSession();
   const user = session?.user;
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <header data-site-header className="sticky top-0 z-40 w-full border-b bg-white/95 dark:bg-gray-950/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
@@ -53,15 +55,15 @@ export function Navbar() {
           </Link>
         </nav>
 
-        <details className="group relative md:hidden">
+        <details open={mobileMenuOpen} onToggle={(event) => setMobileMenuOpen(event.currentTarget.open)} className="group relative md:hidden">
           <summary className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-lg border text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-900 [&::-webkit-details-marker]:hidden" aria-label="Open navigation menu">
             <Menu className="h-5 w-5" />
           </summary>
-          <nav className="absolute right-0 top-12 z-50 w-56 rounded-xl border bg-white p-2 shadow-xl dark:bg-gray-950">
+          <nav onClick={(event) => { if ((event.target as HTMLElement).closest("a")) setMobileMenuOpen(false); }} className="absolute right-0 top-12 z-50 w-56 rounded-xl border bg-white p-2 shadow-xl dark:bg-gray-950">
             <Link href="/dashboard/marketplace" className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-blue-950/40"><Store className="h-4 w-4" /> Marketplace</Link>
             <Link href="/vendors" className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-blue-950/40"><Store className="h-4 w-4" /> Verified vendors</Link>
             <Link href="/recruiters" className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-blue-950/40"><Briefcase className="h-4 w-4" /> Recruiter hub</Link>
-            {session ? <><Link href="/dashboard" className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-blue-950/40"><LayoutDashboard className="h-4 w-4" /> My dashboard</Link><Link href="/dashboard/profile" className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-blue-950/40"><UserRound className="h-4 w-4" /> Profile settings</Link><div className="mt-1 flex items-center justify-between border-t px-3 pt-2 text-sm font-semibold text-gray-700 dark:text-gray-200"><span>Appearance</span><ThemeToggle /></div><button type="button" onClick={() => signOut({ callbackUrl: "/" })} className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"><LogOut className="h-4 w-4" /> Log out</button></> : <div className="mt-1 space-y-1 border-t pt-2"><Link href="/login" className="block rounded-lg px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-blue-950/40">Log in</Link><Link href="/register" className="block rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">Create an account</Link></div>}
+            {session ? <><Link href="/dashboard" className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-blue-950/40"><LayoutDashboard className="h-4 w-4" /> My dashboard</Link><Link href="/dashboard/profile" className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-blue-950/40"><UserRound className="h-4 w-4" /> Profile settings</Link><div className="mt-1 flex items-center justify-between border-t px-3 pt-2 text-sm font-semibold text-gray-700 dark:text-gray-200"><span>Appearance</span><ThemeToggle /></div><button type="button" onClick={() => { setMobileMenuOpen(false); signOut({ callbackUrl: "/" }); }} className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"><LogOut className="h-4 w-4" /> Log out</button></> : <div className="mt-1 space-y-1 border-t pt-2"><Link href="/login" className="block rounded-lg px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-blue-950/40">Log in</Link><Link href="/register" className="block rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">Create an account</Link></div>}
           </nav>
         </details>
 
