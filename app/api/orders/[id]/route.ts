@@ -77,12 +77,15 @@ export async function PUT(
       if (!ownsEveryItem) return NextResponse.json({ error: "You can only fulfill orders containing your products." }, { status: 403 });
       const allowedStatus = (order.status === "PROCESSING" && validated.status === "SHIPPED") || (order.status === "SHIPPED" && validated.status === "DELIVERED");
       if (!allowedStatus) return NextResponse.json({ error: "This order cannot move to that fulfillment status." }, { status: 400 });
-      if (validated.status === "SHIPPED" && !validated.trackingReference) return NextResponse.json({ error: "Enter a shipment or tracking reference before marking this order shipped." }, { status: 400 });
     }
+
+    const generatedTrackingReference = validated.status === "SHIPPED"
+      ? order.trackingReference || `CVD-${order.orderNumber.slice(-8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`
+      : undefined;
 
     const updatedOrder = await prisma.order.update({
       where: { id },
-      data: { status: validated.status, trackingReference: validated.trackingReference },
+      data: { status: validated.status, trackingReference: generatedTrackingReference },
       include: { user: true },
     });
 

@@ -128,3 +128,14 @@
     @apply font-sans;
   }
 }
+
+@media print {
+  @page { size: A4; margin: 10mm; }
+  [data-site-header], aside { display: none !important; }
+  main { width: 100% !important; max-width: none !important; }
+  main > section { max-width: none !important; }
+  article { border: 0 !important; box-shadow: none !important; padding: 0 !important; }
+  article, article * { break-inside: avoid; }
+  article .space-y-6 > * + * { margin-top: 0.65rem !important; }
+  article .p-4 { padding: 0.55rem !important; }
+}

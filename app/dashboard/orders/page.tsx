@@ -117,6 +117,7 @@ export default async function OrdersPage() {
                   <span className="text-xs text-gray-500 block">Total Amount</span>
                   <span className="text-xl font-black text-blue-600">₦{order.totalAmount.toLocaleString()}</span>
                   <Link href={`/dashboard/orders/${order.id}`} className="mt-2 block text-xs font-bold text-blue-600 hover:underline">View order details</Link>
+                  {(order.status === "SHIPPED" || order.status === "DELIVERED") && <Link href={`/dashboard/orders/${order.id}/tracking`} className="mt-1 block text-xs font-bold text-emerald-600 hover:underline">Track shipment</Link>}
                 </div>
               </div>
 
