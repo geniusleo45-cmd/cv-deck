@@ -4,14 +4,16 @@ import { CartProvider } from "@/components/cart/CartProvider";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ReportButton } from "@/components/ReportButton";
-import { Store, ShieldCheck, MapPin, Star, MessageSquare } from "lucide-react";
+import { Store, ShieldCheck, MapPin, Star, MessageSquare, Search } from "lucide-react";
 
 // Vendor ratings and inventory counts come from the live marketplace database.
 export const dynamic = "force-dynamic";
 
-export default async function PublicVendorsPage() {
+export default async function PublicVendorsPage({ searchParams }: { searchParams: Promise<{ query?: string }> }) {
+  const { query = "" } = await searchParams;
+  const search = query.trim();
   const vendors = await prisma.vendor.findMany({
-    where: { status: "VERIFIED" },
+    where: { status: "VERIFIED", ...(search ? { OR: [{ businessName: { contains: search, mode: "insensitive" } }, { officeAddress: { contains: search, mode: "insensitive" } }] } : {}) },
     include: {
       user: { select: { id: true, name: true, email: true, phone: true } },
       _count: { select: { products: true } },
@@ -33,6 +35,14 @@ export default async function PublicVendorsPage() {
               Connect directly with verified electronics shops on Pepple Street, Otigba Street, Medical Road, and Ikeja Plaza.
             </p>
           </div>
+
+          <form action="/vendors" className="flex max-w-xl gap-2">
+            <label className="relative flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" /><input name="query" defaultValue={search} placeholder="Search shop name or location, e.g. Otigba" className="w-full rounded-xl border bg-white py-2.5 pl-9 pr-3 text-sm dark:bg-gray-900" /></label>
+            <Button type="submit" className="bg-blue-600 font-bold text-white hover:bg-blue-700">Search</Button>
+            {search && <Button variant="outline" asChild><Link href="/vendors">Clear</Link></Button>}
+          </form>
+
+          {search && <p className="text-sm text-gray-500">{vendors.length} verified vendor{vendors.length === 1 ? "" : "s"} found for “{search}”.</p>}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {vendors.map((vendor) => (
@@ -76,6 +86,7 @@ export default async function PublicVendorsPage() {
               </div>
             ))}
           </div>
+          {!vendors.length && <div className="rounded-2xl border border-dashed p-10 text-center text-sm text-gray-500">No verified vendors match your search. Try a shop name, street, or area.</div>}
         </div>
       </div>
     </CartProvider>
