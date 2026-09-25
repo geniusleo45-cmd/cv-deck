@@ -96,7 +96,7 @@ export async function PUT(
         type: "ORDER_STATUS",
         title: `Order Status Updated: ${validated.status}`,
         message: validated.status === "SHIPPED" && updatedOrder.trackingReference ? `Your order #${updatedOrder.orderNumber} has shipped. Reference: ${updatedOrder.trackingReference}` : `Your order #${updatedOrder.orderNumber} status has been updated to ${validated.status}.`,
-        link: `/dashboard/orders`,
+        link: validated.status === "SHIPPED" ? `/dashboard/orders/${updatedOrder.id}/tracking` : `/dashboard/orders/${updatedOrder.id}`,
       },
     });
 

@@ -98,7 +98,7 @@ export async function POST(req: Request) {
         type: "MESSAGE",
         title: `New message from ${sessionUser.name || "a user"}`,
         message: validated.content.slice(0, 80) + (validated.content.length > 80 ? "..." : ""),
-        link: `/dashboard/messages`,
+        link: `/dashboard/messages?conversationId=${conversation.id}`,
       },
     });
 

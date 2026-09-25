@@ -23,7 +23,7 @@ interface Conversation {
 }
 interface Contact { id: string; name: string | null; email: string; role: string; avatar?: string | null; vendorProfile?: { businessName: string } | null; recruiterProfile?: { companyName: string; industry?: string | null } | null; }
 
-export function ChatWindow({ initialReceiverId }: { initialReceiverId?: string }) {
+export function ChatWindow({ initialReceiverId, initialConversationId }: { initialReceiverId?: string; initialConversationId?: string }) {
   const { data: session } = useSession();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -43,18 +43,24 @@ export function ChatWindow({ initialReceiverId }: { initialReceiverId?: string }
       if (res.ok) {
         const data = await res.json();
         setConversations(data);
-        if (data.length > 0) setSelectedConversation((current) => current ?? (initialReceiverId ? data.find((conversation: Conversation) => conversation.messages[0]?.senderId === initialReceiverId || conversation.messages[0]?.receiverId === initialReceiverId) ?? null : data[0]));
+        if (data.length > 0) setSelectedConversation((current) => current ?? (initialConversationId ? data.find((conversation: Conversation) => conversation.id === initialConversationId) ?? null : initialReceiverId ? data.find((conversation: Conversation) => conversation.messages[0]?.senderId === initialReceiverId || conversation.messages[0]?.receiverId === initialReceiverId) ?? null : data[0]));
       }
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
-  }, [initialReceiverId]);
+  }, [initialConversationId, initialReceiverId]);
 
   useEffect(() => {
     fetchConversations();
   }, [fetchConversations]);
+
+  useEffect(() => {
+    if (!initialConversationId) return;
+    const conversation = conversations.find((item) => item.id === initialConversationId);
+    if (conversation) setSelectedConversation(conversation);
+  }, [conversations, initialConversationId]);
 
   useEffect(() => {
     const query = contactQuery.trim();

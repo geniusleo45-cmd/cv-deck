@@ -5,9 +5,9 @@ import { MessageSquare } from "lucide-react";
 export default async function MessagesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ receiverId?: string }>;
+  searchParams: Promise<{ receiverId?: string; conversationId?: string }>;
 }) {
-  const { receiverId } = await searchParams;
+  const { receiverId, conversationId } = await searchParams;
   await getCurrentUser();
 
   return (
@@ -21,7 +21,7 @@ export default async function MessagesPage({
         </p>
       </div>
 
-      <ChatWindow initialReceiverId={receiverId} />
+      <ChatWindow initialReceiverId={receiverId} initialConversationId={conversationId} />
     </div>
   );
 }

@@ -79,7 +79,7 @@ export async function POST(
           type: "MESSAGE",
           title: `New message from ${sessionUser.name || "a CV Deck user"}`,
           message: content.slice(0, 80) + (content.length > 80 ? "..." : ""),
-          link: "/dashboard/messages",
+          link: `/dashboard/messages?conversationId=${conversationId}`,
         },
       }),
     ]);
