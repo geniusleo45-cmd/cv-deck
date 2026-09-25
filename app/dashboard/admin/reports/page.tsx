@@ -15,7 +15,7 @@ export default async function ReportsPage() {
   const vendorIds = reports.filter((report) => report.targetType === "VENDOR").map((report) => report.targetId);
   const [products, vendors] = await Promise.all([
     productIds.length ? prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true, name: true, status: true } }) : [],
-    vendorIds.length ? prisma.vendor.findMany({ where: { id: { in: vendorIds } }, select: { id: true, businessName: true } }) : [],
+    vendorIds.length ? prisma.vendor.findMany({ where: { id: { in: vendorIds } }, select: { id: true, businessName: true, status: true } }) : [],
   ]);
   const productById = new Map(products.map((product) => [product.id, product]));
   const vendorById = new Map(vendors.map((vendor) => [vendor.id, vendor]));
@@ -34,7 +34,7 @@ export default async function ReportsPage() {
             const vendor = report.targetType === "VENDOR" ? vendorById.get(report.targetId) : null;
             const href = product ? `/dashboard/marketplace/${product.id}` : vendor ? `/vendors/${vendor.id}` : null;
             const label = product?.name || vendor?.businessName || "Removed marketplace item";
-            return <tr key={report.id} className="border-b align-top last:border-0"><td className="p-4"><p className="font-semibold">{report.user.name || "CV Deck user"}</p><p className="text-xs text-gray-500">{report.user.email}</p></td><td className="py-4 pr-4"><p className="text-xs font-bold text-gray-500">{report.targetType}</p>{href ? <Link href={href} className="mt-1 inline-flex items-center gap-1 font-semibold text-blue-600 hover:underline">{label}<ExternalLink className="h-3.5 w-3.5" /></Link> : <p className="mt-1 text-gray-500">{label}</p>}{product && <p className={`mt-1 text-[10px] font-bold ${product.status === "ACTIVE" ? "text-emerald-600" : "text-amber-600"}`}>{product.status}</p>}</td><td className="max-w-sm py-4 pr-4">{report.reason}</td><td className="pr-4 pt-4"><ReportActions id={report.id} initialStatus={report.status} targetType={report.targetType} initialProductStatus={product?.status} /></td></tr>;
+            return <tr key={report.id} className="border-b align-top last:border-0"><td className="p-4"><p className="font-semibold">{report.user.name || "CV Deck user"}</p><p className="text-xs text-gray-500">{report.user.email}</p></td><td className="py-4 pr-4"><p className="text-xs font-bold text-gray-500">{report.targetType}</p>{href ? <Link href={href} className="mt-1 inline-flex items-center gap-1 font-semibold text-blue-600 hover:underline">{label}<ExternalLink className="h-3.5 w-3.5" /></Link> : <p className="mt-1 text-gray-500">{label}</p>}{product && <p className={`mt-1 text-[10px] font-bold ${product.status === "ACTIVE" ? "text-emerald-600" : "text-amber-600"}`}>{product.status}</p>}{vendor && <p className={`mt-1 text-[10px] font-bold ${vendor.status === "VERIFIED" ? "text-emerald-600" : "text-amber-600"}`}>{vendor.status}</p>}</td><td className="max-w-sm py-4 pr-4">{report.reason}</td><td className="pr-4 pt-4"><ReportActions id={report.id} initialStatus={report.status} targetType={report.targetType} initialProductStatus={product?.status} initialVendorStatus={vendor?.status} /></td></tr>;
           })}</tbody>
         </table>
         {!reports.length && <p className="p-8 text-center text-sm text-gray-500">No reports yet.</p>}

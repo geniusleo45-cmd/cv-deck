@@ -38,7 +38,7 @@ export default async function ProductDetailPage({
     },
   });
 
-  if (!product) {
+  if (!product || ((product.status !== "ACTIVE" || product.vendor.status !== "VERIFIED") && sessionUser?.role !== "ADMIN")) {
     notFound();
   }
 

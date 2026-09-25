@@ -15,6 +15,7 @@ export async function GET(req: Request) {
 
     const where: any = {
       status: "ACTIVE",
+      vendor: { status: "VERIFIED" },
     };
 
     if (query) {
