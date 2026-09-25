@@ -103,7 +103,7 @@ export function ProductDetailClient({
   };
 
   return (
-    <div className="space-y-6 pt-4 border-t">
+    <div className="space-y-6 border-t pt-4 pb-20 lg:pb-0">
       {/* Add to Cart CTA */}
       <div className="flex items-center gap-3">
         <Button
@@ -134,6 +134,18 @@ export function ProductDetailClient({
       </div>
 
       <div className="flex justify-end"><ReportButton targetType="PRODUCT" targetId={productId} /></div>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-white/95 p-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur dark:bg-gray-950/95 lg:hidden">
+        <Button
+          size="lg"
+          disabled={stock <= 0}
+          onClick={handleAddToCart}
+          className={`w-full gap-2 font-bold ${added ? "bg-emerald-600 hover:bg-emerald-700" : "bg-blue-600 hover:bg-blue-700"}`}
+        >
+          {added ? <CheckCircle className="h-5 w-5" /> : <ShoppingBag className="h-5 w-5" />}
+          {stock > 0 ? (added ? "Added to Cart" : `Add to Cart · ₦${price.toLocaleString()}`) : "Sold Out"}
+        </Button>
+      </div>
 
       {/* Reviews & Rating Section */}
       <div className="space-y-4 pt-4 border-t">
