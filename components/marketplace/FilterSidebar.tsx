@@ -28,7 +28,7 @@ export function FilterSidebar({
 }: FilterSidebarProps) {
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+  const activeFilterCount = [filters.query, filters.categoryId, filters.condition, filters.locationZone, filters.minPrice, filters.maxPrice].filter(Boolean).length;
   const locationZones = [
     "All Zones",
     "Pepple Street",

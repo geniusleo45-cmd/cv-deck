@@ -10,7 +10,7 @@ export async function GET(req: Request) {
     const queryObj = Object.fromEntries(searchParams.entries());
     const validatedQuery = productQuerySchema.parse(queryObj);
 
-    const { query, categoryId, minPrice, maxPrice, condition, locationZone, vendorId, page, limit } = validatedQuery;
+    const { query, categoryId, minPrice, maxPrice, condition, locationZone, vendorId, sort, page, limit } = validatedQuery;
     const skip = (page - 1) * limit;
 
     const where: any = {
@@ -45,6 +45,7 @@ export async function GET(req: Request) {
       if (minPrice !== undefined) where.price.gte = minPrice;
       if (maxPrice !== undefined) where.price.lte = maxPrice;
     }
+    const orderBy = sort === "PRICE_LOW" ? { price: "asc" as const } : sort === "PRICE_HIGH" ? { price: "desc" as const } : { createdAt: "desc" as const };
 
     const [products, total] = await Promise.all([
       prisma.product.findMany({
@@ -64,7 +65,7 @@ export async function GET(req: Request) {
             ? { where: { userId: currentUser.id }, select: { id: true } }
             : false,
         },
-        orderBy: { createdAt: "desc" },
+        orderBy,
         skip,
         take: limit,
       }),

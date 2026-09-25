@@ -27,6 +27,7 @@ export const productQuerySchema = z.object({
   condition: z.enum(["NEW", "REFURBISHED", "USED"]).optional(),
   locationZone: z.string().optional(),
   vendorId: z.string().optional(),
+  sort: z.enum(["NEWEST", "PRICE_LOW", "PRICE_HIGH"]).default("NEWEST"),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(48).default(12),
 }).refine(

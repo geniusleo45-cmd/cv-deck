@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ProductCard } from "@/components/marketplace/ProductCard";
 import { FilterSidebar } from "@/components/marketplace/FilterSidebar";
-import { Store, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Store, Loader2, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
 
 type Pagination = {
   total: number;
@@ -33,6 +33,7 @@ export default function MarketplacePage() {
     locationZone: "",
     minPrice: "",
     maxPrice: "",
+    sort: "NEWEST",
   });
 
   const fetchCategories = async () => {
@@ -58,6 +59,7 @@ export default function MarketplacePage() {
       if (filters.locationZone) params.append("locationZone", filters.locationZone);
       if (filters.minPrice) params.append("minPrice", filters.minPrice);
       if (filters.maxPrice) params.append("maxPrice", filters.maxPrice);
+      if (filters.sort !== "NEWEST") params.append("sort", filters.sort);
       params.append("page", page.toString());
 
       const res = await fetch(`/api/products?${params.toString()}`, { signal });
@@ -106,6 +108,7 @@ export default function MarketplacePage() {
       locationZone: "",
       minPrice: "",
       maxPrice: "",
+      sort: "NEWEST",
     });
     setPage(1);
   };
@@ -140,6 +143,16 @@ export default function MarketplacePage() {
         />
 
         <div className="flex-1 min-w-0">
+          <div className="mb-4 flex items-center justify-end">
+            <label className="flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-gray-300">
+              <ArrowUpDown className="h-4 w-4 text-blue-600" /> Sort by
+              <select value={filters.sort} onChange={(event) => handleFilterChange("sort", event.target.value)} className="rounded-lg border bg-white px-2.5 py-2 text-xs font-semibold text-gray-700 dark:bg-gray-900 dark:text-gray-200">
+                <option value="NEWEST">Newest listings</option>
+                <option value="PRICE_LOW">Price: low to high</option>
+                <option value="PRICE_HIGH">Price: high to low</option>
+              </select>
+            </label>
+          </div>
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400 space-y-3">
               <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
