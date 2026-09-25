@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function PublicVendorsPage() {
   const vendors = await prisma.vendor.findMany({
+    where: { status: "VERIFIED" },
     include: {
       user: { select: { id: true, name: true, email: true, phone: true } },
       _count: { select: { products: true } },
@@ -62,7 +63,7 @@ export default async function PublicVendorsPage() {
 
                 <div className="pt-3 border-t flex items-center justify-between">
                   <Button size="sm" variant="outline" asChild>
-                    <Link href={`/dashboard/marketplace?vendorId=${vendor.id}`}>View Products</Link>
+                    <Link href={`/vendors/${vendor.id}`}>Visit Store</Link>
                   </Button>
                   <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white font-bold gap-1" asChild>
                     <Link href={`/dashboard/messages?receiverId=${vendor.user.id}`}>

@@ -144,9 +144,9 @@ export function ProductCard({ product }: ProductCardProps) {
 
         {/* Vendor info badge */}
         <div className="pt-2 border-t flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
-          <span className="font-semibold truncate max-w-[150px]">
+          <Link href={`/vendors/${product.vendor.id}`} className="max-w-[150px] truncate font-semibold hover:text-blue-600">
             {product.vendor.businessName}
-          </span>
+          </Link>
           <div className="flex items-center gap-1 text-amber-500 font-bold">
             <Star className="h-3.5 w-3.5 fill-amber-400" />
             <span>{product.vendor.rating > 0 ? product.vendor.rating : "New"}</span>
