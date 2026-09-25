@@ -77,11 +77,12 @@ export async function PUT(
       if (!ownsEveryItem) return NextResponse.json({ error: "You can only fulfill orders containing your products." }, { status: 403 });
       const allowedStatus = (order.status === "PROCESSING" && validated.status === "SHIPPED") || (order.status === "SHIPPED" && validated.status === "DELIVERED");
       if (!allowedStatus) return NextResponse.json({ error: "This order cannot move to that fulfillment status." }, { status: 400 });
+      if (validated.status === "SHIPPED" && !validated.trackingReference) return NextResponse.json({ error: "Enter a shipment or tracking reference before marking this order shipped." }, { status: 400 });
     }
 
     const updatedOrder = await prisma.order.update({
       where: { id },
-      data: { status: validated.status },
+      data: { status: validated.status, trackingReference: validated.trackingReference },
       include: { user: true },
     });
 
@@ -91,7 +92,7 @@ export async function PUT(
         userId: updatedOrder.userId,
         type: "ORDER_STATUS",
         title: `Order Status Updated: ${validated.status}`,
-        message: `Your order #${updatedOrder.orderNumber} status has been updated to ${validated.status}.`,
+        message: validated.status === "SHIPPED" && updatedOrder.trackingReference ? `Your order #${updatedOrder.orderNumber} has shipped. Reference: ${updatedOrder.trackingReference}` : `Your order #${updatedOrder.orderNumber} status has been updated to ${validated.status}.`,
         link: `/dashboard/orders`,
       },
     });

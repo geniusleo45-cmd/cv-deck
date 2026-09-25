@@ -203,6 +203,7 @@ model Order {
   status          OrderStatus @default(PENDING)
   totalAmount     Float
   shippingAddress String?
+  trackingReference String?
 
   user    User        @relation(fields: [userId], references: [id])
   items   OrderItem[]

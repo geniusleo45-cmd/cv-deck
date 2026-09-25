@@ -8,6 +8,7 @@ export const checkoutSchema = z.object({
 
 export const updateOrderStatusSchema = z.object({
   status: z.enum(["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"]),
+  trackingReference: z.string().trim().min(2, "Enter a shipment or tracking reference").max(120).optional(),
 });
 
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
