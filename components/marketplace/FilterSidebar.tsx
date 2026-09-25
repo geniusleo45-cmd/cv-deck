@@ -27,6 +27,8 @@ export function FilterSidebar({
   onReset,
 }: FilterSidebarProps) {
   const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
   const locationZones = [
     "All Zones",
     "Pepple Street",
@@ -45,21 +47,21 @@ export function FilterSidebar({
   ];
 
   return (
-    <div className="w-full lg:w-64 shrink-0 space-y-6 rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm">
+    <div className="w-full shrink-0 rounded-2xl border bg-white p-5 shadow-sm dark:bg-gray-900 lg:w-64">
       <div className="flex items-center justify-between border-b pb-3">
         <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 text-base">
           <Filter className="h-4 w-4 text-blue-600" /> Filters
         </h3>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onReset}
-          className="text-xs text-gray-500 hover:text-blue-600 gap-1"
-        >
-          <RotateCcw className="h-3 w-3" /> Reset
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={() => setMobileFiltersOpen((open) => !open)} className="gap-1 text-xs text-blue-600 lg:hidden">
+            {mobileFiltersOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+            {mobileFiltersOpen ? "Hide" : "Show"}{activeFilterCount ? ` (${activeFilterCount})` : ""}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onReset} className="gap-1 text-xs text-gray-500 hover:text-blue-600"><RotateCcw className="h-3 w-3" /> Reset</Button>
+        </div>
       </div>
 
+      <div className={`${mobileFiltersOpen ? "mt-6 block" : "hidden"} space-y-6 lg:mt-6 lg:block`}>
       {/* Search Input */}
       <div className="space-y-2">
         <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
@@ -183,6 +185,7 @@ export function FilterSidebar({
             className="text-xs"
           />
         </div>
+      </div>
       </div>
     </div>
   );
