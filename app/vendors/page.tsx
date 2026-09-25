@@ -32,7 +32,7 @@ export default async function PublicVendorsPage({ searchParams }: { searchParams
               <Store className="h-7 w-7 text-blue-600" /> Computer Village Verified Vendor Directory
             </h1>
             <p className="text-xs text-gray-500 mt-1">
-              Connect directly with verified electronics shops on Pepple Street, Otigba Street, Medical Road, and Ikeja Plaza.
+              Connect directly with verified electronics shops across the wider Computer Village cluster—from Otigba, Pepple, Kodesoh, and Ola Ayeni to Medical Road and surrounding Ikeja access streets.
             </p>
           </div>
 

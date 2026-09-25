@@ -34,6 +34,14 @@ export function FilterSidebar({
     "Medical Road",
     "Kodesoh Street",
     "Ola Ayeni Street",
+    "Akinremi Street",
+    "Adepele Street",
+    "Francis Oremuji Street",
+    "Oshitelo Street",
+    "Simbiat Abiola Way",
+    "Olu Koleosho Street",
+    "Oremeji Street",
+    "Obafemi Awolowo Way",
   ];
 
   return (
