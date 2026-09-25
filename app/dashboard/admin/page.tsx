@@ -12,6 +12,8 @@ import {
   BarChart3,
   AlertTriangle,
   CheckCircle,
+  Flag,
+  EyeOff,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -24,6 +26,9 @@ export default async function AdminDashboardPage() {
     productsCount,
     orders,
     paymentsSum,
+    pendingReports,
+    hiddenProducts,
+    pausedVendors,
   ] = await Promise.all([
     prisma.user.findMany({ orderBy: { createdAt: "desc" }, take: 10 }),
     prisma.vendor.findMany({
@@ -54,6 +59,9 @@ export default async function AdminDashboardPage() {
       where: { status: "SUCCESS" },
       _sum: { amount: true },
     }),
+    prisma.report.count({ where: { status: "PENDING" } }),
+    prisma.product.count({ where: { status: "INACTIVE" } }),
+    prisma.vendor.count({ where: { status: "REJECTED" } }),
   ]);
 
   const totalRevenue = paymentsSum._sum.amount || 0;
@@ -74,6 +82,24 @@ export default async function AdminDashboardPage() {
           </p>
         </div>
       </div>
+
+      <section className="grid gap-4 sm:grid-cols-3">
+        <Link href="/dashboard/admin/reports" className="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-red-900/60 dark:bg-red-950/20">
+          <div className="flex items-center justify-between text-xs font-bold text-red-800 dark:text-red-300"><span>Pending marketplace reports</span><Flag className="h-4 w-4" /></div>
+          <p className="mt-2 text-3xl font-black text-red-900 dark:text-red-100">{pendingReports}</p>
+          <p className="mt-1 text-xs text-red-700 dark:text-red-300">Open moderation queue →</p>
+        </Link>
+        <Link href="/dashboard/admin/reports" className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-amber-900/60 dark:bg-amber-950/20">
+          <div className="flex items-center justify-between text-xs font-bold text-amber-800 dark:text-amber-300"><span>Hidden product listings</span><EyeOff className="h-4 w-4" /></div>
+          <p className="mt-2 text-3xl font-black text-amber-900 dark:text-amber-100">{hiddenProducts}</p>
+          <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">Review and restore if needed →</p>
+        </Link>
+        <Link href="/dashboard/admin/reports" className="rounded-2xl border border-purple-200 bg-purple-50 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-purple-900/60 dark:bg-purple-950/20">
+          <div className="flex items-center justify-between text-xs font-bold text-purple-800 dark:text-purple-300"><span>Paused vendor shops</span><ShieldCheck className="h-4 w-4" /></div>
+          <p className="mt-2 text-3xl font-black text-purple-900 dark:text-purple-100">{pausedVendors}</p>
+          <p className="mt-1 text-xs text-purple-700 dark:text-purple-300">Open shop moderation →</p>
+        </Link>
+      </section>
 
       {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
