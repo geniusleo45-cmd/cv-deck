@@ -55,6 +55,7 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name,
+          image: user.avatar,
           role: user.role,
           vendorId: user.vendorProfile?.id,
           recruiterId: user.recruiterProfile?.id,
@@ -64,13 +65,16 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
         token.vendorId = user.vendorId;
         token.recruiterId = user.recruiterId;
+        token.picture = user.image;
       }
+
+      if (trigger === "update" && session?.image) token.picture = session.image;
 
       return token;
     },
@@ -81,6 +85,7 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as string;
         session.user.vendorId = token.vendorId as string | undefined;
         session.user.recruiterId = token.recruiterId as string | undefined;
+        session.user.image = token.picture as string | undefined;
       }
 
       return session;
