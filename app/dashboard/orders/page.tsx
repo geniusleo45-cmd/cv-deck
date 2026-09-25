@@ -5,6 +5,7 @@ import { ShoppingBag, CheckCircle, Clock, Truck, CreditCard, XCircle } from "luc
 import { Button } from "@/components/ui/button";
 import { PayOrderButton } from "@/components/payments/PayOrderButton";
 import { CancelPendingOrderButton } from "@/components/payments/CancelPendingOrderButton";
+import { CopyTrackingButton } from "@/components/CopyTrackingButton";
 
 export default async function OrdersPage() {
   const user = await getCurrentUser();
@@ -117,7 +118,7 @@ export default async function OrdersPage() {
                   <span className="text-xs text-gray-500 block">Total Amount</span>
                   <span className="text-xl font-black text-blue-600">₦{order.totalAmount.toLocaleString()}</span>
                   <Link href={`/dashboard/orders/${order.id}`} className="mt-2 block text-xs font-bold text-blue-600 hover:underline">View order details</Link>
-                  {(order.status === "SHIPPED" || order.status === "DELIVERED") && <Link href={`/dashboard/orders/${order.id}/tracking`} className="mt-1 block text-xs font-bold text-emerald-600 hover:underline">Track shipment</Link>}
+                  {(order.status === "SHIPPED" || order.status === "DELIVERED") && <div className="mt-1 flex flex-wrap items-center justify-end gap-x-3 gap-y-1"><Link href={`/dashboard/orders/${order.id}/tracking`} className="text-xs font-bold text-emerald-600 hover:underline">Track shipment</Link>{order.trackingReference && <CopyTrackingButton reference={order.trackingReference} />}</div>}
                 </div>
               </div>
 
