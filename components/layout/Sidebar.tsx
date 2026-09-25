@@ -10,6 +10,7 @@ import {
   Store,
   Users,
   ShieldCheck,
+  Flag,
   MessageSquare,
   BarChart3,
   User,
@@ -36,6 +37,7 @@ export function DashboardSidebar() {
           { href: "/dashboard/admin/products", label: "Marketplace Products", icon: Package },
           { href: "/dashboard/admin/orders", label: "Global Orders", icon: ShoppingBag },
           { href: "/dashboard/admin/analytics", label: "Analytics & Reports", icon: BarChart3 },
+          { href: "/dashboard/admin/reports", label: "Marketplace Reports", icon: Flag },
           { href: "/dashboard/messages", label: "Messages", icon: MessageSquare },
           { href: "/dashboard/profile", label: "Settings", icon: Settings },
         ];

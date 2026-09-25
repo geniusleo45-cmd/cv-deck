@@ -54,6 +54,17 @@ enum NotificationType {
   SYSTEM
 }
 
+enum ReportTarget {
+  PRODUCT
+  VENDOR
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+}
+
 enum VerificationStatus {
   PENDING
   APPROVED
@@ -80,6 +91,7 @@ model User {
   notifications    Notification[]
   cart             Cart?
   wishlistItems    WishlistItem[]
+  reports          Report[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -290,6 +302,19 @@ model Notification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
+}
+
+model Report {
+  id String @id @default(cuid())
+  userId String
+  targetType ReportTarget
+  targetId String
+  reason String
+  status ReportStatus @default(PENDING)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  @@unique([userId, targetType, targetId])
+  @@index([status, createdAt])
 }
 
 model VendorVerification {

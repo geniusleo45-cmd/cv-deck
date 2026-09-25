@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ShoppingBag, Star, CheckCircle, Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { ReportButton } from "@/components/ReportButton";
 
 interface ReviewItem {
   id: string;
@@ -131,6 +132,8 @@ export function ProductDetailClient({
           <span className="hidden sm:inline">{wishlisted ? "Saved" : "Save"}</span>
         </Button>
       </div>
+
+      <div className="flex justify-end"><ReportButton targetType="PRODUCT" targetId={productId} /></div>
 
       {/* Reviews & Rating Section */}
       <div className="space-y-4 pt-4 border-t">

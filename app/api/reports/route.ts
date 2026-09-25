@@ -1,0 +1,6 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { getCurrentUser } from "@/lib/rbac";
+import { prisma } from "@/lib/prisma";
+const schema = z.object({ targetType: z.enum(["PRODUCT", "VENDOR"]), targetId: z.string().min(1), reason: z.string().trim().min(8).max(500) });
+export async function POST(request: Request) { const user = await getCurrentUser(); if (!user) return NextResponse.json({ error: "Please sign in to submit a report." }, { status: 401 }); const input = schema.safeParse(await request.json().catch(() => null)); if (!input.success) return NextResponse.json({ error: "Enter at least 8 characters." }, { status: 400 }); const exists = input.data.targetType === "PRODUCT" ? await prisma.product.findUnique({ where: { id: input.data.targetId }, select: { id: true } }) : await prisma.vendor.findUnique({ where: { id: input.data.targetId }, select: { id: true } }); if (!exists) return NextResponse.json({ error: "This listing is unavailable." }, { status: 404 }); await prisma.report.upsert({ where: { userId_targetType_targetId: { userId: user.id, targetType: input.data.targetType, targetId: input.data.targetId } }, create: { ...input.data, userId: user.id }, update: { reason: input.data.reason, status: "PENDING" } }); return NextResponse.json({ ok: true }); }
