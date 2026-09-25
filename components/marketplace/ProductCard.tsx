@@ -10,6 +10,7 @@ import { useState } from "react";
 
 interface ProductCardProps {
   compact?: boolean;
+  mobileCompact?: boolean;
   product: {
     id: string;
     name: string;
@@ -34,7 +35,7 @@ interface ProductCardProps {
   };
 }
 
-export function ProductCard({ product, compact = false }: ProductCardProps) {
+export function ProductCard({ product, compact = false, mobileCompact = false }: ProductCardProps) {
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
   const [saved, setSaved] = useState((product.wishlistItems?.length ?? 0) > 0);
@@ -88,25 +89,25 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
   };
 
   return (
-    <div className={`group flex overflow-hidden rounded-2xl border bg-white shadow-sm transition-all duration-200 hover:shadow-lg dark:bg-gray-900 ${compact ? "flex-row" : "flex-col"}`}>
+    <div className={`group flex overflow-hidden rounded-2xl border bg-white shadow-sm transition-all duration-200 hover:shadow-lg dark:bg-gray-900 ${compact ? "flex-row" : mobileCompact ? "flex-row sm:flex-col" : "flex-col"}`}>
       {/* Product Image Header */}
-      <div className={`relative shrink-0 overflow-hidden bg-gray-100 dark:bg-gray-800 ${compact ? "h-28 w-28 sm:h-32 sm:w-40" : "aspect-[4/3] w-full"}`}>
+      <div className={`relative shrink-0 overflow-hidden bg-gray-100 dark:bg-gray-800 ${compact ? "h-28 w-28 sm:h-32 sm:w-40" : mobileCompact ? "h-28 w-28 sm:aspect-[4/3] sm:h-auto sm:w-full" : "aspect-[4/3] w-full"}`}>
         <Image
           src={imageUrl}
           alt={product.name}
           fill
-          sizes={compact ? "(max-width: 640px) 112px, 160px" : "(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"}
+          sizes={compact ? "(max-width: 640px) 112px, 160px" : mobileCompact ? "(max-width: 640px) 112px, (max-width: 1280px) 50vw, 33vw" : "(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"}
           className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
         />
-        <div className={`absolute left-2 top-2 flex flex-wrap gap-1 ${compact ? "max-w-[70px]" : "left-3 top-3 gap-1.5"}`}>
+        <div className={`absolute left-2 top-2 flex flex-wrap gap-1 ${compact ? "max-w-[70px]" : mobileCompact ? "max-w-[70px] sm:left-3 sm:top-3 sm:max-w-none sm:gap-1.5" : "left-3 top-3 gap-1.5"}`}>
           <Badge className={`font-bold text-[10px] uppercase px-2 py-0.5 ${getConditionColor(product.condition)}`}>
             {product.condition}
           </Badge>
-          {!compact && product.vendor.status === "VERIFIED" && (
+          {!compact && <span className={mobileCompact ? "hidden sm:inline-flex" : "inline-flex"}>{product.vendor.status === "VERIFIED" && (
             <Badge className="bg-purple-600 text-white text-[10px] font-bold gap-1 px-2 py-0.5">
               <ShieldCheck className="h-3 w-3" /> Verified Vendor
             </Badge>
-          )}
+          )}</span>}
         </div>
         <Button
           type="button"
@@ -116,16 +117,16 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
           disabled={saving}
           aria-label={saved ? `Remove ${product.name} from saved products` : `Save ${product.name}`}
           aria-pressed={saved}
-          className={`absolute right-2 top-2 rounded-full bg-white/95 text-gray-700 shadow-sm hover:bg-white dark:bg-gray-900/95 dark:text-gray-100 ${compact ? "h-7 w-7" : "right-3 top-3 h-9 w-9"}`}
+          className={`absolute right-2 top-2 rounded-full bg-white/95 text-gray-700 shadow-sm hover:bg-white dark:bg-gray-900/95 dark:text-gray-100 ${compact ? "h-7 w-7" : mobileCompact ? "h-7 w-7 sm:right-3 sm:top-3 sm:h-9 sm:w-9" : "right-3 top-3 h-9 w-9"}`}
         >
           <Heart className={`h-4 w-4 ${saved ? "fill-red-500 text-red-500" : ""}`} />
         </Button>
       </div>
 
       {/* Product Details Content */}
-      <div className={`flex min-w-0 flex-1 flex-col justify-between ${compact ? "space-y-1.5 p-3" : "space-y-3 p-4"}`}>
+      <div className={`flex min-w-0 flex-1 flex-col justify-between ${compact ? "space-y-1.5 p-3" : mobileCompact ? "space-y-1.5 p-3 sm:space-y-3 sm:p-4" : "space-y-3 p-4"}`}>
         <div>
-          <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+          <div className={`mb-1 flex items-center justify-between text-xs text-gray-500 ${mobileCompact ? "sm:flex" : ""}`}>
             <span>{product.category?.name || "Hardware"}</span>
             <span className="flex items-center gap-1 font-semibold text-gray-700 dark:text-gray-300">
               <MapPin className="h-3 w-3 text-blue-600" /> {product.locationZone}
@@ -138,13 +139,13 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
             </h3>
           </Link>
 
-          {!compact && <p className="mt-1.5 line-clamp-2 text-xs text-gray-500">
+          {!compact && <p className={`${mobileCompact ? "hidden sm:block" : ""} mt-1.5 line-clamp-2 text-xs text-gray-500`}>
             {product.description}
           </p>}
         </div>
 
         {/* Vendor info badge */}
-        {!compact && <div className="flex items-center justify-between border-t pt-2 text-xs text-gray-600 dark:text-gray-400">
+        {!compact && <div className={`${mobileCompact ? "hidden sm:flex" : "flex"} items-center justify-between border-t pt-2 text-xs text-gray-600 dark:text-gray-400`}>
           <Link href={`/vendors/${product.vendor.id}`} className="max-w-[150px] truncate font-semibold hover:text-blue-600">
             {product.vendor.businessName}
           </Link>
@@ -157,7 +158,7 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
         {/* Price and Cart CTA */}
         <div className="flex items-center justify-between pt-1">
           <div className="min-w-0">
-            <div className={`${compact ? "text-base" : "text-lg"} font-black text-gray-900 dark:text-white`}>
+            <div className={`${compact || mobileCompact ? "text-base sm:text-lg" : "text-lg"} font-black text-gray-900 dark:text-white`}>
               ₦{product.price.toLocaleString()}
             </div>
             {!compact && product.compareAtPrice && product.compareAtPrice > product.price && (
