@@ -1,4 +1,44 @@
+import Link from "next/link";
+import { ExternalLink, Flag } from "lucide-react";
 import { requireAdmin } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { ReportActions } from "./ReportActions";
-export default async function ReportsPage() { await requireAdmin(); const reports = await prisma.report.findMany({ include: { user: { select: { name: true, email: true } } }, orderBy: { createdAt: "desc" } }); return <section className="space-y-6"><div><h1 className="text-2xl font-black">Marketplace reports</h1><p className="mt-1 text-sm text-gray-500">Customer-submitted reports for products and vendors.</p></div><div className="overflow-x-auto rounded-2xl border bg-white dark:bg-gray-900"><table className="w-full text-left text-sm"><thead><tr className="border-b text-xs text-gray-500"><th className="p-4">Reporter</th><th>Target</th><th>Reason</th><th className="pr-4">Status</th></tr></thead><tbody>{reports.map((report) => <tr key={report.id} className="border-b last:border-0 align-top"><td className="p-4"><p className="font-semibold">{report.user.name || "CV Deck user"}</p><p className="text-xs text-gray-500">{report.user.email}</p></td><td>{report.targetType} · {report.targetId}</td><td className="max-w-sm py-4">{report.reason}</td><td className="pr-4"><ReportActions id={report.id} initialStatus={report.status} /></td></tr>)}</tbody></table>{!reports.length && <p className="p-8 text-center text-sm text-gray-500">No reports yet.</p>}</div></section>; }
+
+export default async function ReportsPage() {
+  await requireAdmin();
+
+  const reports = await prisma.report.findMany({
+    include: { user: { select: { name: true, email: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+  const productIds = reports.filter((report) => report.targetType === "PRODUCT").map((report) => report.targetId);
+  const vendorIds = reports.filter((report) => report.targetType === "VENDOR").map((report) => report.targetId);
+  const [products, vendors] = await Promise.all([
+    productIds.length ? prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true, name: true } }) : [],
+    vendorIds.length ? prisma.vendor.findMany({ where: { id: { in: vendorIds } }, select: { id: true, businessName: true } }) : [],
+  ]);
+  const productById = new Map(products.map((product) => [product.id, product]));
+  const vendorById = new Map(vendors.map((vendor) => [vendor.id, vendor]));
+
+  return (
+    <section className="space-y-6">
+      <div>
+        <h1 className="flex items-center gap-2 text-2xl font-black"><Flag className="h-6 w-6 text-red-600" /> Marketplace reports</h1>
+        <p className="mt-1 text-sm text-gray-500">Open the reported listing or storefront, then record the outcome.</p>
+      </div>
+      <div className="overflow-x-auto rounded-2xl border bg-white dark:bg-gray-900">
+        <table className="w-full text-left text-sm">
+          <thead><tr className="border-b text-xs text-gray-500"><th className="p-4">Reporter</th><th>Reported item</th><th>Reason</th><th className="pr-4">Status</th></tr></thead>
+          <tbody>{reports.map((report) => {
+            const product = report.targetType === "PRODUCT" ? productById.get(report.targetId) : null;
+            const vendor = report.targetType === "VENDOR" ? vendorById.get(report.targetId) : null;
+            const href = product ? `/dashboard/marketplace/${product.id}` : vendor ? `/vendors/${vendor.id}` : null;
+            const label = product?.name || vendor?.businessName || "Removed marketplace item";
+            return <tr key={report.id} className="border-b align-top last:border-0"><td className="p-4"><p className="font-semibold">{report.user.name || "CV Deck user"}</p><p className="text-xs text-gray-500">{report.user.email}</p></td><td className="py-4 pr-4"><p className="text-xs font-bold text-gray-500">{report.targetType}</p>{href ? <Link href={href} className="mt-1 inline-flex items-center gap-1 font-semibold text-blue-600 hover:underline">{label}<ExternalLink className="h-3.5 w-3.5" /></Link> : <p className="mt-1 text-gray-500">{label}</p>}</td><td className="max-w-sm py-4 pr-4">{report.reason}</td><td className="pr-4 pt-4"><ReportActions id={report.id} initialStatus={report.status} /></td></tr>;
+          })}</tbody>
+        </table>
+        {!reports.length && <p className="p-8 text-center text-sm text-gray-500">No reports yet.</p>}
+      </div>
+    </section>
+  );
+}
