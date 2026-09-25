@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, User, MessageSquare, RefreshCw, Search, Store, Briefcase, Users } from "lucide-react";
+import { Send, User, MessageSquare, RefreshCw, Search, Store, Briefcase, Users, ArrowLeft } from "lucide-react";
 
 interface ChatUser { id: string; name: string; avatar?: string | null; role: string; }
 interface Message {
@@ -38,6 +38,7 @@ export function ChatWindow({ initialReceiverId, initialConversationId }: { initi
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [searchingContacts, setSearchingContacts] = useState(false);
   const [newRecipient, setNewRecipient] = useState<Contact | null>(null);
+  const [mobileThreadOpen, setMobileThreadOpen] = useState(Boolean(initialReceiverId || initialConversationId));
 
   const fetchConversations = useCallback(async () => {
     try {
@@ -150,9 +151,9 @@ export function ChatWindow({ initialReceiverId, initialConversationId }: { initi
     : newRecipient;
 
   return (
-    <div className="flex h-[600px] w-full rounded-2xl border bg-white dark:bg-gray-900 overflow-hidden shadow-sm">
+    <div className="flex h-[calc(100dvh-10rem)] min-h-[520px] w-full overflow-hidden rounded-2xl border bg-white shadow-sm dark:bg-gray-900 md:h-[600px]">
       {/* Left List of Conversations */}
-      <div className="w-1/3 border-r flex flex-col bg-gray-50/50 dark:bg-gray-900/50">
+      <div className={`${mobileThreadOpen ? "hidden" : "flex"} w-full flex-col border-r bg-gray-50/50 dark:bg-gray-900/50 md:flex md:w-1/3`}>
         <div className="p-4 border-b flex items-center justify-between">
           <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <MessageSquare className="h-4 w-4 text-blue-600" /> Messages
@@ -161,7 +162,7 @@ export function ChatWindow({ initialReceiverId, initialConversationId }: { initi
             <RefreshCw className={`h-3.5 w-3.5 text-gray-500 ${loading ? "animate-spin" : ""}`} />
           </Button>
         </div>
-        <div className="border-b p-3 space-y-2"><label className="relative block"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" /><Input value={contactQuery} onChange={(event) => setContactQuery(event.target.value)} placeholder="Find people on CV Deck" className="h-9 pl-9 text-xs" /></label>{contactQuery.trim().length >= 2 && <div className="max-h-52 space-y-1 overflow-y-auto rounded-lg border bg-white p-1 dark:bg-gray-900">{searchingContacts ? <p className="px-2 py-2 text-xs text-gray-500">Searching contacts...</p> : contacts.length ? contacts.map((contact) => { const detail = contact.vendorProfile?.businessName || contact.recruiterProfile?.companyName || contact.email; const Icon = contact.role === "VENDOR" ? Store : contact.role === "RECRUITER" ? Briefcase : Users; return <button key={contact.id} type="button" onClick={() => { setNewRecipient(contact); setSelectedConversation(null); setMessages([]); setContactQuery(""); setContacts([]); }} className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left hover:bg-blue-50 dark:hover:bg-blue-950/30"><Avatar className="h-8 w-8 shrink-0"><AvatarImage src={contact.avatar || ""} alt={contact.name || "CV Deck user"} /><AvatarFallback className="bg-blue-100 text-xs font-bold text-blue-700">{contact.name?.slice(0, 2).toUpperCase() || "CV"}</AvatarFallback></Avatar><span className="min-w-0 flex-1"><span className="block truncate text-xs font-bold text-gray-900 dark:text-white">{contact.name || "CV Deck user"}</span><span className="block truncate text-[10px] text-gray-500">{detail}</span></span><Icon className="h-3.5 w-3.5 shrink-0 text-gray-400" /></button>; }) : <p className="px-2 py-2 text-xs text-gray-500">No contacts found.</p>}</div>}</div>
+        <div className="border-b p-3 space-y-2"><label className="relative block"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" /><Input value={contactQuery} onChange={(event) => setContactQuery(event.target.value)} placeholder="Find people on CV Deck" className="h-9 pl-9 text-xs" /></label>{contactQuery.trim().length >= 2 && <div className="max-h-52 space-y-1 overflow-y-auto rounded-lg border bg-white p-1 dark:bg-gray-900">{searchingContacts ? <p className="px-2 py-2 text-xs text-gray-500">Searching contacts...</p> : contacts.length ? contacts.map((contact) => { const detail = contact.vendorProfile?.businessName || contact.recruiterProfile?.companyName || contact.email; const Icon = contact.role === "VENDOR" ? Store : contact.role === "RECRUITER" ? Briefcase : Users; return <button key={contact.id} type="button" onClick={() => { setNewRecipient(contact); setSelectedConversation(null); setMessages([]); setContactQuery(""); setContacts([]); setMobileThreadOpen(true); }} className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left hover:bg-blue-50 dark:hover:bg-blue-950/30"><Avatar className="h-8 w-8 shrink-0"><AvatarImage src={contact.avatar || ""} alt={contact.name || "CV Deck user"} /><AvatarFallback className="bg-blue-100 text-xs font-bold text-blue-700">{contact.name?.slice(0, 2).toUpperCase() || "CV"}</AvatarFallback></Avatar><span className="min-w-0 flex-1"><span className="block truncate text-xs font-bold text-gray-900 dark:text-white">{contact.name || "CV Deck user"}</span><span className="block truncate text-[10px] text-gray-500">{detail}</span></span><Icon className="h-3.5 w-3.5 shrink-0 text-gray-400" /></button>; }) : <p className="px-2 py-2 text-xs text-gray-500">No contacts found.</p>}</div>}</div>
 
         <div className="flex-1 overflow-y-auto divide-y">
           {conversations.length === 0 ? (
@@ -177,7 +178,7 @@ export function ChatWindow({ initialReceiverId, initialConversationId }: { initi
               return (
                 <div
                   key={conv.id}
-                  onClick={() => setSelectedConversation(conv)}
+                  onClick={() => { setSelectedConversation(conv); setMobileThreadOpen(true); }}
                   className={`p-3.5 cursor-pointer transition-colors flex items-center gap-3 ${
                     isSelected
                       ? "bg-blue-50 dark:bg-blue-950/40 border-l-4 border-blue-600"
@@ -204,12 +205,13 @@ export function ChatWindow({ initialReceiverId, initialConversationId }: { initi
       </div>
 
       {/* Right Chat Thread View */}
-      <div className="flex-1 flex flex-col justify-between bg-white dark:bg-gray-900">
+      <div className={`${mobileThreadOpen ? "flex" : "hidden"} w-full flex-1 flex-col justify-between bg-white dark:bg-gray-900 md:flex`}>
         {selectedConversation || newRecipient || initialReceiverId ? (
           <>
             {/* Thread Header */}
             <div className="p-4 border-b flex items-center justify-between bg-gray-50/30 dark:bg-gray-900/30">
               <div className="flex items-center gap-3">
+                <Button type="button" variant="ghost" size="icon" onClick={() => setMobileThreadOpen(false)} className="h-8 w-8 md:hidden" aria-label="Back to conversations"><ArrowLeft className="h-4 w-4" /></Button>
                 <Avatar className="h-9 w-9"><AvatarImage src={activeParticipant?.avatar || ""} alt={activeParticipant?.name || "Conversation"} /><AvatarFallback className="bg-blue-600 text-xs font-bold text-white">{activeParticipant?.name?.slice(0, 2).toUpperCase() || <User className="h-4 w-4" />}</AvatarFallback></Avatar>
                 <div>
                   <h4 className="text-sm font-bold text-gray-900 dark:text-white">
