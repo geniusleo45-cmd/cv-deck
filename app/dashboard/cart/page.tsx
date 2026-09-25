@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/components/cart/CartProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 export default function CartPage() {
   const { items, total, setQuantity, removeItem, clearCart } = useCart();
   const router = useRouter();
+  const checkoutFormRef = useRef<HTMLFormElement>(null);
 
   const [shippingAddress, setShippingAddress] = useState("");
   const [phone, setPhone] = useState("");
@@ -103,6 +104,17 @@ export default function CartPage() {
         </div>
       )}
 
+      <div className="sticky top-16 z-30 -mx-4 border-y bg-white/95 px-4 py-3 shadow-sm backdrop-blur dark:bg-gray-950/95 sm:-mx-6 sm:px-6 lg:hidden">
+        <button
+          type="button"
+          onClick={() => checkoutFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          className="flex w-full items-center justify-between rounded-xl bg-blue-600 px-4 py-3 text-left text-sm font-bold text-white shadow-md shadow-blue-500/20"
+        >
+          <span>Checkout · ₦{total.toLocaleString()}</span>
+          <span className="flex items-center gap-1 text-xs">Delivery & payment <ArrowRight className="h-4 w-4" /></span>
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Cart Item List */}
         <div className="lg:col-span-2 space-y-4">
@@ -166,7 +178,7 @@ export default function CartPage() {
 
         {/* Checkout Form Card */}
         <div className="space-y-4">
-          <form onSubmit={handleCheckout} className="rounded-2xl border bg-white dark:bg-gray-900 p-6 shadow-sm space-y-4">
+          <form ref={checkoutFormRef} onSubmit={handleCheckout} className="scroll-mt-36 rounded-2xl border bg-white dark:bg-gray-900 p-6 shadow-sm space-y-4">
             <h2 className="text-base font-bold text-gray-900 dark:text-white border-b pb-3 flex items-center gap-2">
               <CreditCard className="h-5 w-5 text-blue-600" /> Delivery & Payment
             </h2>
