@@ -9,6 +9,7 @@ import { ShoppingBag, ShieldCheck, MapPin, Star, CheckCircle, Heart } from "luci
 import { useState } from "react";
 
 interface ProductCardProps {
+  compact?: boolean;
   product: {
     id: string;
     name: string;
@@ -33,7 +34,7 @@ interface ProductCardProps {
   };
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, compact = false }: ProductCardProps) {
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
   const [saved, setSaved] = useState((product.wishlistItems?.length ?? 0) > 0);
@@ -87,21 +88,21 @@ export function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <div className="group flex flex-col rounded-2xl border bg-white dark:bg-gray-900 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-200">
+    <div className={`group flex overflow-hidden rounded-2xl border bg-white shadow-sm transition-all duration-200 hover:shadow-lg dark:bg-gray-900 ${compact ? "flex-row" : "flex-col"}`}>
       {/* Product Image Header */}
-      <div className="relative aspect-[4/3] w-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+      <div className={`relative shrink-0 overflow-hidden bg-gray-100 dark:bg-gray-800 ${compact ? "h-28 w-28 sm:h-32 sm:w-40" : "aspect-[4/3] w-full"}`}>
         <Image
           src={imageUrl}
           alt={product.name}
           fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+          sizes={compact ? "(max-width: 640px) 112px, 160px" : "(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"}
           className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
         />
-        <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+        <div className={`absolute left-2 top-2 flex flex-wrap gap-1 ${compact ? "max-w-[70px]" : "left-3 top-3 gap-1.5"}`}>
           <Badge className={`font-bold text-[10px] uppercase px-2 py-0.5 ${getConditionColor(product.condition)}`}>
             {product.condition}
           </Badge>
-          {product.vendor.status === "VERIFIED" && (
+          {!compact && product.vendor.status === "VERIFIED" && (
             <Badge className="bg-purple-600 text-white text-[10px] font-bold gap-1 px-2 py-0.5">
               <ShieldCheck className="h-3 w-3" /> Verified Vendor
             </Badge>
@@ -115,14 +116,14 @@ export function ProductCard({ product }: ProductCardProps) {
           disabled={saving}
           aria-label={saved ? `Remove ${product.name} from saved products` : `Save ${product.name}`}
           aria-pressed={saved}
-          className="absolute right-3 top-3 h-9 w-9 rounded-full bg-white/95 text-gray-700 shadow-sm hover:bg-white dark:bg-gray-900/95 dark:text-gray-100"
+          className={`absolute right-2 top-2 rounded-full bg-white/95 text-gray-700 shadow-sm hover:bg-white dark:bg-gray-900/95 dark:text-gray-100 ${compact ? "h-7 w-7" : "right-3 top-3 h-9 w-9"}`}
         >
           <Heart className={`h-4 w-4 ${saved ? "fill-red-500 text-red-500" : ""}`} />
         </Button>
       </div>
 
       {/* Product Details Content */}
-      <div className="flex flex-1 flex-col p-4 justify-between space-y-3">
+      <div className={`flex min-w-0 flex-1 flex-col justify-between ${compact ? "space-y-1.5 p-3" : "space-y-3 p-4"}`}>
         <div>
           <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
             <span>{product.category?.name || "Hardware"}</span>
@@ -137,13 +138,13 @@ export function ProductCard({ product }: ProductCardProps) {
             </h3>
           </Link>
 
-          <p className="text-xs text-gray-500 line-clamp-2 mt-1.5">
+          {!compact && <p className="mt-1.5 line-clamp-2 text-xs text-gray-500">
             {product.description}
-          </p>
+          </p>}
         </div>
 
         {/* Vendor info badge */}
-        <div className="pt-2 border-t flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
+        {!compact && <div className="flex items-center justify-between border-t pt-2 text-xs text-gray-600 dark:text-gray-400">
           <Link href={`/vendors/${product.vendor.id}`} className="max-w-[150px] truncate font-semibold hover:text-blue-600">
             {product.vendor.businessName}
           </Link>
@@ -151,15 +152,15 @@ export function ProductCard({ product }: ProductCardProps) {
             <Star className="h-3.5 w-3.5 fill-amber-400" />
             <span>{product.vendor.rating > 0 ? product.vendor.rating : "New"}</span>
           </div>
-        </div>
+        </div>}
 
         {/* Price and Cart CTA */}
         <div className="flex items-center justify-between pt-1">
-          <div>
-            <div className="text-lg font-black text-gray-900 dark:text-white">
+          <div className="min-w-0">
+            <div className={`${compact ? "text-base" : "text-lg"} font-black text-gray-900 dark:text-white`}>
               ₦{product.price.toLocaleString()}
             </div>
-            {product.compareAtPrice && product.compareAtPrice > product.price && (
+            {!compact && product.compareAtPrice && product.compareAtPrice > product.price && (
               <div className="text-xs text-gray-400 line-through">
                 ₦{product.compareAtPrice.toLocaleString()}
               </div>
