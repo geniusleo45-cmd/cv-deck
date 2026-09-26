@@ -84,7 +84,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       <section className="grid gap-4 sm:grid-cols-3">
-        <Link href="/dashboard/admin/reports" className="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-red-900/60 dark:bg-red-950/20">
+        <Link href="/dashboard/admin/reports?status=PENDING" className="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-red-900/60 dark:bg-red-950/20">
           <div className="flex items-center justify-between text-xs font-bold text-red-800 dark:text-red-300"><span>Pending marketplace reports</span><Flag className="h-4 w-4" /></div>
           <p className="mt-2 text-3xl font-black text-red-900 dark:text-red-100">{pendingReports}</p>
           <p className="mt-1 text-xs text-red-700 dark:text-red-300">Open moderation queue →</p>
