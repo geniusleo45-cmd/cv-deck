@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { getCurrentUser } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { reviewSchema } from "@/lib/validations/review";
+
+const vendorReplySchema = z.object({ reviewId: z.string().min(1), reply: z.string().trim().min(3, "Reply must be at least 3 characters.").max(1000, "Reply is too long.") });
 
 export async function POST(req: Request) {
   try {
@@ -84,5 +87,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
     }
     return NextResponse.json({ error: "Failed to submit review" }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const sessionUser = await getCurrentUser();
+    if (!sessionUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const input = vendorReplySchema.parse(await req.json());
+    const vendor = await prisma.vendor.findUnique({ where: { userId: sessionUser.id }, select: { id: true } });
+    if (!vendor) return NextResponse.json({ error: "Only the product vendor can reply to reviews." }, { status: 403 });
+
+    const review = await prisma.review.findUnique({ where: { id: input.reviewId }, select: { id: true, vendorId: true, userId: true, product: { select: { id: true, name: true } } } });
+    if (!review || review.vendorId !== vendor.id) return NextResponse.json({ error: "Review not found." }, { status: 404 });
+
+    const updatedReview = await prisma.review.update({ where: { id: review.id }, data: { vendorReply: input.reply, vendorRepliedAt: new Date() } });
+    await prisma.notification.create({ data: { userId: review.userId, type: "SYSTEM", title: "Vendor replied to your review", message: `The vendor replied to your review of “${review.product.name}”.`, link: `/dashboard/marketplace/${review.product.id}#reviews` } });
+    return NextResponse.json(updatedReview);
+  } catch (error: any) {
+    if (error.name === "ZodError") return NextResponse.json({ error: "Invalid vendor reply." }, { status: 400 });
+    return NextResponse.json({ error: "Unable to save vendor reply." }, { status: 500 });
   }
 }

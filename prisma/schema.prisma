@@ -262,12 +262,14 @@ model Payment {
 }
 
 model Review {
-  id        String   @id @default(cuid())
-  rating    Int
-  comment   String
-  userId    String
-  productId String
-  vendorId  String?
+  id              String    @id @default(cuid())
+  rating          Int
+  comment         String
+  vendorReply     String?
+  vendorRepliedAt DateTime?
+  userId          String
+  productId       String
+  vendorId        String?
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)

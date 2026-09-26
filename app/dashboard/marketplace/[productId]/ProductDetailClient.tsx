@@ -13,6 +13,8 @@ interface ReviewItem {
   id: string;
   rating: number;
   comment: string;
+  vendorReply: string | null;
+  vendorRepliedAt: Date | null;
   createdAt: Date;
   user: { name: string | null; avatar: string | null };
 }
@@ -228,6 +230,7 @@ export function ProductDetailClient({
                 </span>
               </div>
               <p className="text-gray-600 dark:text-gray-300">{rev.comment}</p>
+              {rev.vendorReply && <div className="mt-3 rounded-lg border-l-4 border-blue-500 bg-blue-50 p-3 text-blue-950 dark:bg-blue-950/30 dark:text-blue-100"><p className="text-[11px] font-bold uppercase tracking-wide">Vendor response</p><p className="mt-1 text-gray-700 dark:text-gray-200">{rev.vendorReply}</p>{rev.vendorRepliedAt && <p className="mt-2 text-[10px] text-blue-700/80 dark:text-blue-200/80">Replied {new Date(rev.vendorRepliedAt).toLocaleDateString("en-NG", { dateStyle: "medium" })}</p>}</div>}
             </div>
           ))}
         </div>
