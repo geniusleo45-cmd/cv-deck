@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { notifyVendorsOfPaidOrder } from "@/lib/orderNotifications";
 
 type FlutterwaveWebhook = {
   event?: string;
@@ -69,6 +70,7 @@ export async function POST(request: Request) {
       data: { status: "PROCESSING" },
     }),
   ]);
+  await notifyVendorsOfPaidOrder(payment.orderId);
 
   return NextResponse.json({ received: true });
 }
