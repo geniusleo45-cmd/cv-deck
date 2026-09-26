@@ -65,6 +65,13 @@ enum ReportStatus {
   DISMISSED
 }
 
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  REJECTED
+}
+
 enum VerificationStatus {
   PENDING
   APPROVED
@@ -92,6 +99,7 @@ model User {
   cart             Cart?
   wishlistItems    WishlistItem[]
   reports          Report[]
+  disputes         Dispute[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -221,6 +229,7 @@ model Order {
   user    User        @relation(fields: [userId], references: [id])
   items   OrderItem[]
   payment Payment?
+  dispute Dispute?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -315,6 +324,25 @@ model Report {
   createdAt DateTime @default(now())
   @@unique([userId, targetType, targetId])
   @@index([status, createdAt])
+}
+
+model Dispute {
+  id        String        @id @default(cuid())
+  orderId   String        @unique
+  userId    String
+  reason    String
+  details   String
+  status    DisputeStatus @default(OPEN)
+  adminNote String?
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([userId])
 }
 
 model VendorVerification {

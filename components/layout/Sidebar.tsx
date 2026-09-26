@@ -18,6 +18,7 @@ import {
   Briefcase,
   PlusCircle,
   Heart,
+  LifeBuoy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ export function DashboardSidebar() {
           { href: "/dashboard/admin/orders", label: "Global Orders", icon: ShoppingBag },
           { href: "/dashboard/admin/analytics", label: "Analytics & Reports", icon: BarChart3 },
           { href: "/dashboard/admin/reports", label: "Marketplace Reports", icon: Flag },
+          { href: "/dashboard/admin/disputes", label: "Order Support", icon: LifeBuoy },
           { href: "/dashboard/messages", label: "Messages", icon: MessageSquare },
           { href: "/dashboard/profile", label: "Settings", icon: Settings },
         ];

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { PayOrderButton } from "@/components/payments/PayOrderButton";
 import { CancelPendingOrderButton } from "@/components/payments/CancelPendingOrderButton";
 import { CopyTrackingButton } from "@/components/CopyTrackingButton";
+import { RequestSupportButton } from "@/components/RequestSupportButton";
 
 export default async function OrdersPage() {
   const user = await getCurrentUser();
@@ -18,6 +19,7 @@ export default async function OrdersPage() {
         user: { select: { name: true, email: true } },
         items: { include: { product: { include: { vendor: true } } } },
         payment: true,
+        dispute: true,
       },
       orderBy: { createdAt: "desc" },
     });
@@ -37,6 +39,7 @@ export default async function OrdersPage() {
             include: { product: true },
           },
           payment: true,
+          dispute: true,
         },
         orderBy: { createdAt: "desc" },
       });
@@ -48,6 +51,7 @@ export default async function OrdersPage() {
         user: { select: { name: true, email: true } },
         items: { include: { product: { include: { vendor: true } } } },
         payment: true,
+        dispute: true,
       },
       orderBy: { createdAt: "desc" },
     });
@@ -174,6 +178,9 @@ export default async function OrdersPage() {
                   <CancelPendingOrderButton orderId={order.id} />
                   <PayOrderButton orderId={order.id} provider={order.payment?.provider === "PAYSTACK" ? "PAYSTACK" : "FLUTTERWAVE"} />
                 </div>
+              )}
+              {order.userId === user?.id && order.payment?.status === "SUCCESS" && order.status !== "CANCELLED" && (
+                <div className="flex justify-end border-t pt-3"><RequestSupportButton orderId={order.id} disputeStatus={order.dispute?.status} /></div>
               )}
             </div>
           ))}
