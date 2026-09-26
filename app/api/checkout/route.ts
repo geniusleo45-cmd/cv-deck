@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     const validated = requestSchema.parse(body);
     const quantities = new Map<string, number>();
     for (const item of validated.items) quantities.set(item.productId, (quantities.get(item.productId) || 0) + item.quantity);
-    const products = await prisma.product.findMany({ where: { id: { in: [...quantities.keys()] }, status: "ACTIVE" } });
+    const products = await prisma.product.findMany({ where: { id: { in: [...quantities.keys()] }, status: "ACTIVE" }, include: { vendor: { select: { userId: true } } } });
     if (products.length !== quantities.size) {
       return NextResponse.json({ error: "One or more products are unavailable." }, { status: 400 });
     }
@@ -59,6 +59,13 @@ export async function POST(req: Request) {
         const updated = await tx.product.updateMany({ where: { id: product.id, stock: { gte: quantity } }, data: { stock: { decrement: quantity } } });
         if (updated.count !== 1) throw new Error("A product changed while you were checking out.");
       }
+
+      const stockAlerts = products.flatMap((product) => {
+        const remainingStock = product.stock - (quantities.get(product.id) || 0);
+        if (product.stock <= 5 || remainingStock > 5) return [];
+        return [{ userId: product.vendor.userId, type: "SYSTEM" as const, title: remainingStock === 0 ? "Product is out of stock" : "Low stock alert", message: remainingStock === 0 ? `“${product.name}” is now out of stock after an order reservation.` : `“${product.name}” is down to ${remainingStock} unit${remainingStock === 1 ? "" : "s"} after an order reservation.`, link: `/dashboard/vendor/products/${product.id}` }];
+      });
+      if (stockAlerts.length) await tx.notification.createMany({ data: stockAlerts });
 
     // Send order confirmation notification
       await tx.notification.create({
