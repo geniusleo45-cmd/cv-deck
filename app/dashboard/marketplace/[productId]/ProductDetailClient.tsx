@@ -168,7 +168,7 @@ export function ProductDetailClient({
       </div>
 
       {/* Reviews & Rating Section */}
-      <div className="space-y-4 pt-4 border-t">
+      <div id="reviews" className="space-y-4 pt-4 border-t">
         <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center justify-between">
           <span>Customer Reviews ({reviews.length})</span>
           <span className="text-xs font-semibold text-amber-500 flex items-center gap-1">

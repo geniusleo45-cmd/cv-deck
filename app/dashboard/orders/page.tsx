@@ -135,6 +135,7 @@ export default async function OrdersPage() {
                       <p className="text-gray-500 mt-0.5">
                         Qty: {item.quantity} x ₦{item.price.toLocaleString()} • Vendor: <span className="font-semibold">{item.product.vendor?.businessName || "Computer Village Shop"}</span>
                       </p>
+                      {order.userId === user?.id && order.status === "DELIVERED" && <Link href={`/dashboard/marketplace/${item.product.id}#reviews`} className="mt-1 inline-block font-bold text-blue-600 hover:underline">Rate this product</Link>}
                     </div>
                     <span className="font-bold text-gray-900 dark:text-white">
                       ₦{(item.quantity * item.price).toLocaleString()}
