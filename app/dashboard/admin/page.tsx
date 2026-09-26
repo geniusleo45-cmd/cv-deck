@@ -14,6 +14,7 @@ import {
   CheckCircle,
   Flag,
   EyeOff,
+  LifeBuoy,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -29,6 +30,7 @@ export default async function AdminDashboardPage() {
     pendingReports,
     hiddenProducts,
     pausedVendors,
+    activeSupportCases,
   ] = await Promise.all([
     prisma.user.findMany({ orderBy: { createdAt: "desc" }, take: 10 }),
     prisma.vendor.findMany({
@@ -62,6 +64,7 @@ export default async function AdminDashboardPage() {
     prisma.report.count({ where: { status: "PENDING" } }),
     prisma.product.count({ where: { status: "INACTIVE" } }),
     prisma.vendor.count({ where: { status: "REJECTED" } }),
+    prisma.dispute.count({ where: { status: { in: ["OPEN", "UNDER_REVIEW"] } } }),
   ]);
 
   const totalRevenue = paymentsSum._sum.amount || 0;
@@ -83,7 +86,7 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
 
-      <section className="grid gap-4 sm:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Link href="/dashboard/admin/reports?status=PENDING" className="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-red-900/60 dark:bg-red-950/20">
           <div className="flex items-center justify-between text-xs font-bold text-red-800 dark:text-red-300"><span>Pending marketplace reports</span><Flag className="h-4 w-4" /></div>
           <p className="mt-2 text-3xl font-black text-red-900 dark:text-red-100">{pendingReports}</p>
@@ -98,6 +101,11 @@ export default async function AdminDashboardPage() {
           <div className="flex items-center justify-between text-xs font-bold text-purple-800 dark:text-purple-300"><span>Paused vendor shops</span><ShieldCheck className="h-4 w-4" /></div>
           <p className="mt-2 text-3xl font-black text-purple-900 dark:text-purple-100">{pausedVendors}</p>
           <p className="mt-1 text-xs text-purple-700 dark:text-purple-300">Open shop moderation →</p>
+        </Link>
+        <Link href="/dashboard/admin/disputes?status=OPEN" className="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-blue-900/60 dark:bg-blue-950/20">
+          <div className="flex items-center justify-between text-xs font-bold text-blue-800 dark:text-blue-300"><span>Active support cases</span><LifeBuoy className="h-4 w-4" /></div>
+          <p className="mt-2 text-3xl font-black text-blue-900 dark:text-blue-100">{activeSupportCases}</p>
+          <p className="mt-1 text-xs text-blue-700 dark:text-blue-300">Review buyer order issues →</p>
         </Link>
       </section>
 
