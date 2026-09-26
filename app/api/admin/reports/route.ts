@@ -17,12 +17,13 @@ export async function PUT(request: Request) {
       if (!report) return NextResponse.json({ error: "Report not found." }, { status: 404 });
       if (input.action === "HIDE_PRODUCT" || input.action === "RESTORE_PRODUCT") {
         if (report.targetType !== "PRODUCT") return NextResponse.json({ error: "Only product reports can change a listing." }, { status: 400 });
-        const product = await prisma.product.findUnique({ where: { id: report.targetId }, select: { id: true } });
+        const product = await prisma.product.findUnique({ where: { id: report.targetId }, select: { id: true, name: true, vendor: { select: { userId: true, businessName: true } } } });
         if (!product) return NextResponse.json({ error: "The reported product no longer exists." }, { status: 404 });
         const productStatus = input.action === "HIDE_PRODUCT" ? "INACTIVE" : "ACTIVE";
         await prisma.$transaction([
           prisma.product.update({ where: { id: product.id }, data: { status: productStatus } }),
           prisma.report.update({ where: { id: report.id }, data: { status: "REVIEWED" } }),
+          prisma.notification.create({ data: { userId: product.vendor.userId, type: "SYSTEM", title: productStatus === "INACTIVE" ? "Product listing paused by CV Deck" : "Product listing restored by CV Deck", message: productStatus === "INACTIVE" ? `Your listing “${product.name}” has been removed from public marketplace results following an admin review.` : `Your listing “${product.name}” has been restored to public marketplace results.`, link: "/dashboard/vendor/products" } }),
         ]);
         return NextResponse.json({ status: "REVIEWED", productStatus });
       }
