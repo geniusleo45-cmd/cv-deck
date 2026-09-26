@@ -10,6 +10,13 @@ const reasons = [
   ["OTHER", "Other issue"],
 ] as const;
 
+const supportStatusClasses: Record<string, string> = {
+  OPEN: "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300",
+  UNDER_REVIEW: "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300",
+  RESOLVED: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300",
+  REJECTED: "bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300",
+};
+
 export function RequestSupportButton({ orderId, disputeStatus, adminNote, supportCreatedAt, supportUpdatedAt }: { orderId: string; disputeStatus?: string | null; adminNote?: string | null; supportCreatedAt?: string; supportUpdatedAt?: string }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<(typeof reasons)[number][0]>("ITEM_NOT_RECEIVED");
@@ -18,7 +25,7 @@ export function RequestSupportButton({ orderId, disputeStatus, adminNote, suppor
   const [saving, setSaving] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  if (disputeStatus || submitted) return <div className="max-w-md text-right"><span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">Support case: {(disputeStatus || "OPEN").replace("_", " ")}</span>{supportCreatedAt && <p className="mt-2 text-[11px] text-gray-500">Opened {new Date(supportCreatedAt).toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short" })}</p>}{adminNote && <div className="mt-2 rounded-xl border border-blue-200 bg-blue-50 p-3 text-left text-xs text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100"><p className="font-bold">Support team update</p><p className="mt-1 leading-relaxed">{adminNote}</p>{supportUpdatedAt && <p className="mt-2 text-[11px] text-blue-700/80 dark:text-blue-200/80">Updated {new Date(supportUpdatedAt).toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short" })}</p>}</div>}</div>;
+  if (disputeStatus || submitted) { const status = disputeStatus || "OPEN"; return <div className="max-w-md text-right"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${supportStatusClasses[status] || supportStatusClasses.OPEN}`}>Support case: {status.replace("_", " ")}</span>{supportCreatedAt && <p className="mt-2 text-[11px] text-gray-500">Opened {new Date(supportCreatedAt).toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short" })}</p>}{adminNote && <div className="mt-2 rounded-xl border border-blue-200 bg-blue-50 p-3 text-left text-xs text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100"><p className="font-bold">Support team update</p><p className="mt-1 leading-relaxed">{adminNote}</p>{supportUpdatedAt && <p className="mt-2 text-[11px] text-blue-700/80 dark:text-blue-200/80">Updated {new Date(supportUpdatedAt).toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short" })}</p>}</div>}</div>; }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
