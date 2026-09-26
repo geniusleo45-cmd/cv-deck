@@ -15,7 +15,7 @@ export async function POST(req: Request) {
 
     const product = await prisma.product.findUnique({
       where: { id: validated.productId },
-      select: { vendorId: true },
+      select: { id: true, name: true, vendorId: true, vendor: { select: { userId: true } } },
     });
 
     if (!product) {
@@ -66,6 +66,16 @@ export async function POST(req: Request) {
     await prisma.vendor.update({
       where: { id: product.vendorId },
       data: { rating: Math.round(avgRating * 10) / 10 },
+    });
+
+    await prisma.notification.create({
+      data: {
+        userId: product.vendor.userId,
+        type: "SYSTEM",
+        title: "New verified product review",
+        message: `${review.user.name || "A customer"} left a ${review.rating}/5 review for “${product.name}”.`,
+        link: `/dashboard/marketplace/${product.id}#reviews`,
+      },
     });
 
     return NextResponse.json(review, { status: 201 });
