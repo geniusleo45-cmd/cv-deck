@@ -10,7 +10,7 @@ const reasons = [
   ["OTHER", "Other issue"],
 ] as const;
 
-export function RequestSupportButton({ orderId, disputeStatus }: { orderId: string; disputeStatus?: string | null }) {
+export function RequestSupportButton({ orderId, disputeStatus, adminNote }: { orderId: string; disputeStatus?: string | null; adminNote?: string | null }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<(typeof reasons)[number][0]>("ITEM_NOT_RECEIVED");
   const [details, setDetails] = useState("");
@@ -18,7 +18,7 @@ export function RequestSupportButton({ orderId, disputeStatus }: { orderId: stri
   const [saving, setSaving] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  if (disputeStatus || submitted) return <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">Support case: {(disputeStatus || "OPEN").replace("_", " ")}</span>;
+  if (disputeStatus || submitted) return <div className="max-w-md text-right"><span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">Support case: {(disputeStatus || "OPEN").replace("_", " ")}</span>{adminNote && <div className="mt-2 rounded-xl border border-blue-200 bg-blue-50 p-3 text-left text-xs text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100"><p className="font-bold">Support team update</p><p className="mt-1 leading-relaxed">{adminNote}</p></div>}</div>;
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
