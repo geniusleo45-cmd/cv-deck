@@ -2,7 +2,7 @@ import { getCurrentUser } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Package, ShoppingBag, DollarSign, PlusCircle, AlertTriangle } from "lucide-react";
+import { ShieldCheck, Package, ShoppingBag, DollarSign, PlusCircle, AlertTriangle, Star } from "lucide-react";
 import { FulfillmentActions } from "@/components/vendor/FulfillmentActions";
 
 export default async function VendorDashboardPage() {
@@ -13,6 +13,7 @@ export default async function VendorDashboardPage() {
     include: {
       products: { include: { category: true } },
       verifications: { orderBy: { createdAt: "desc" }, take: 1 },
+      reviews: { orderBy: { createdAt: "desc" }, take: 5, include: { user: { select: { name: true } }, product: { select: { id: true, name: true } } } },
     },
   });
 
@@ -126,7 +127,7 @@ export default async function VendorDashboardPage() {
             <span>Store Rating</span>
             <ShieldCheck className="h-4 w-4 text-amber-500" />
           </div>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{vendor?.rating || "4.8"} ★</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{vendor && vendor.rating > 0 ? `${vendor.rating} ★` : "New store"}</p>
         </div>
       </div>
 
@@ -135,6 +136,11 @@ export default async function VendorDashboardPage() {
         <div><h2 className="text-lg font-bold text-gray-900 dark:text-white">Fulfillment queue</h2><p className="mt-1 text-xs text-gray-500">Update paid orders as you dispatch and complete delivery.</p></div>
         {orders.filter((order) => (order.status === "PROCESSING" || order.status === "SHIPPED") && order.payment?.status === "SUCCESS").length === 0 ? <p className="rounded-xl bg-gray-50 p-4 text-sm text-gray-500 dark:bg-gray-800">No paid orders are waiting for fulfillment.</p> : <div className="space-y-3">{orders.filter((order) => (order.status === "PROCESSING" || order.status === "SHIPPED") && order.payment?.status === "SUCCESS").map((order) => <div key={order.id} className="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-bold text-sm text-gray-900 dark:text-white">Order #{order.orderNumber}</p><p className="mt-1 text-xs text-gray-500">{order.user.name || order.user.email} · {order.items.length} item{order.items.length === 1 ? "" : "s"} · ₦{order.items.reduce((sum, item) => sum + item.quantity * item.price, 0).toLocaleString()}</p></div><FulfillmentActions orderId={order.id} status={order.status as "PROCESSING" | "SHIPPED"} /></div>)}</div>}
       </div>
+
+      <section className="rounded-2xl border bg-white p-6 shadow-sm dark:bg-gray-900">
+        <div className="flex items-center justify-between gap-3"><div><h2 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white"><Star className="h-5 w-5 fill-amber-400 text-amber-400" /> Recent customer feedback</h2><p className="mt-1 text-xs text-gray-500">Verified reviews from customers whose orders were delivered.</p></div>{vendor && vendor.rating > 0 && <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">{vendor.rating} / 5 store rating</span>}</div>
+        {!vendor?.reviews.length ? <p className="mt-4 rounded-xl bg-gray-50 p-4 text-sm text-gray-500 dark:bg-gray-800">No verified reviews yet. Customers can rate products after delivery.</p> : <div className="mt-4 space-y-3">{vendor.reviews.map((review) => <div key={review.id} className="rounded-xl border p-4"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-bold text-gray-900 dark:text-white">{review.product.name}</p><p className="mt-1 text-xs text-gray-500">By {review.user.name || "Verified shopper"} · {new Date(review.createdAt).toLocaleDateString("en-NG", { dateStyle: "medium" })}</p></div><Link href={`/dashboard/marketplace/${review.product.id}#reviews`} className="text-xs font-bold text-blue-600 hover:underline">View product review</Link></div><div className="mt-2 flex items-center gap-1 text-xs font-bold text-amber-600"><Star className="h-3.5 w-3.5 fill-amber-400" /> {review.rating}/5</div><p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{review.comment}</p></div>)}</div>}
+      </section>
 
       {/* Inventory Management Table */}
       <div className="rounded-2xl border bg-white dark:bg-gray-900 p-6 shadow-sm space-y-4">
