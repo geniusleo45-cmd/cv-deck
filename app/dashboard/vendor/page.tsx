@@ -38,11 +38,11 @@ export default async function VendorDashboardPage() {
     : [];
 
   const paidOrders = orders.filter((order) => order.payment?.status === "SUCCESS" && order.status !== "CANCELLED");
-  const totalRevenue = paidOrders.reduce((sum, order) => {
-    const vendorItemsTotal = order.items.reduce((s, i) => s + i.price * i.quantity, 0);
-    return sum + vendorItemsTotal;
-  }, 0);
+  const vendorOrderTotal = (order: typeof orders[number]) => order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalRevenue = paidOrders.reduce((sum, order) => sum + vendorOrderTotal(order), 0);
   const averagePaidOrderValue = paidOrders.length ? totalRevenue / paidOrders.length : 0;
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const recentRevenue = paidOrders.filter((order) => order.createdAt >= thirtyDaysAgo).reduce((sum, order) => sum + vendorOrderTotal(order), 0);
 
   const verificationStatus = vendor?.status || "PENDING";
   const latestVerification = vendor?.verifications[0];
@@ -102,7 +102,7 @@ export default async function VendorDashboardPage() {
       )}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <div className="rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-xs text-gray-500 font-semibold">
             <span>Total Sales Revenue</span>
@@ -133,6 +133,14 @@ export default async function VendorDashboardPage() {
             <DollarSign className="h-4 w-4 text-blue-600" />
           </div>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">₦{averagePaidOrderValue.toLocaleString()}</p>
+        </div>
+
+        <div className="rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm space-y-1">
+          <div className="flex items-center justify-between text-xs text-gray-500 font-semibold">
+            <span>Sales, Last 30 Days</span>
+            <DollarSign className="h-4 w-4 text-emerald-500" />
+          </div>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">₦{recentRevenue.toLocaleString()}</p>
         </div>
 
         <div className="rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm space-y-1">
