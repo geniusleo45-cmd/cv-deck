@@ -13,7 +13,7 @@ export default async function PublicVendorsPage({ searchParams }: { searchParams
   const { query = "" } = await searchParams;
   const search = query.trim();
   const vendors = await prisma.vendor.findMany({
-    where: { status: "VERIFIED", ...(search ? { OR: [{ businessName: { contains: search, mode: "insensitive" } }, { officeAddress: { contains: search, mode: "insensitive" } }] } : {}) },
+    where: { status: "VERIFIED", ...(search ? { OR: [{ businessName: { contains: search, mode: "insensitive" } }, { officeAddress: { contains: search, mode: "insensitive" } }, { products: { some: { status: "ACTIVE", name: { contains: search, mode: "insensitive" } } } }] } : {}) },
     include: {
       user: { select: { id: true, name: true, email: true, phone: true } },
       _count: { select: { products: { where: { status: "ACTIVE" } } } },
@@ -37,7 +37,7 @@ export default async function PublicVendorsPage({ searchParams }: { searchParams
           </div>
 
           <form action="/vendors" className="flex max-w-xl gap-2">
-            <label className="relative flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" /><input name="query" defaultValue={search} placeholder="Search shop name or location, e.g. Otigba" className="w-full rounded-xl border bg-white py-2.5 pl-9 pr-3 text-sm dark:bg-gray-900" /></label>
+            <label className="relative flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" /><input name="query" defaultValue={search} placeholder="Search a shop, product, or location, e.g. laptop or Otigba" className="w-full rounded-xl border bg-white py-2.5 pl-9 pr-3 text-sm dark:bg-gray-900" /></label>
             <Button type="submit" className="bg-blue-600 font-bold text-white hover:bg-blue-700">Search</Button>
             {search && <Button variant="outline" asChild><Link href="/vendors">Clear</Link></Button>}
           </form>
