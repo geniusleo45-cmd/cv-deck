@@ -129,8 +129,9 @@ export default async function CustomerDashboardPage() {
                   <span className="text-xs text-gray-400">
                     {new Date(order.createdAt).toLocaleDateString()}
                   </span>
+                  {(order.status === "SHIPPED" || order.status === "DELIVERED") && <Button variant="ghost" size="sm" asChild><Link href={`/dashboard/orders/${order.id}/tracking`} className="text-xs font-bold text-emerald-600">Track</Link></Button>}
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={`/dashboard/orders`}>Order Details</Link>
+                    <Link href={`/dashboard/orders/${order.id}`}>Order Details</Link>
                   </Button>
                 </div>
               </div>
