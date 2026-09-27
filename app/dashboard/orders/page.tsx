@@ -9,13 +9,20 @@ import { CopyTrackingButton } from "@/components/CopyTrackingButton";
 import { RequestSupportButton } from "@/components/RequestSupportButton";
 import { BuyAgainButton } from "@/components/cart/BuyAgainButton";
 
-export default async function OrdersPage() {
+const orderStatuses = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"] as const;
+const orderFilters = ["ALL", ...orderStatuses] as const;
+
+export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const user = await getCurrentUser();
+  const query = await searchParams;
+  const selectedStatus = orderFilters.includes(query.status as (typeof orderFilters)[number]) ? query.status as (typeof orderFilters)[number] : "ALL";
+  const orderStatus = selectedStatus === "ALL" ? undefined : selectedStatus;
 
   let orders: any[] = [];
 
   if (user?.role === "ADMIN") {
     orders = await prisma.order.findMany({
+      where: orderStatus ? { status: orderStatus } : undefined,
       include: {
         user: { select: { name: true, email: true } },
         items: { include: { product: { include: { vendor: true } } } },
@@ -29,6 +36,7 @@ export default async function OrdersPage() {
     if (vendor) {
       orders = await prisma.order.findMany({
         where: {
+          ...(orderStatus ? { status: orderStatus } : {}),
           items: {
             some: { product: { vendorId: vendor.id } },
           },
@@ -47,7 +55,7 @@ export default async function OrdersPage() {
     }
   } else {
     orders = await prisma.order.findMany({
-      where: { userId: user?.id },
+      where: { userId: user?.id, ...(orderStatus ? { status: orderStatus } : {}) },
       include: {
         user: { select: { name: true, email: true } },
         items: { include: { product: { include: { vendor: true } } } },
@@ -94,12 +102,14 @@ export default async function OrdersPage() {
         </p>
       </div>
 
+      <nav aria-label="Order status filters" className="flex flex-wrap gap-2">{orderFilters.map((status) => <Link key={status} href={status === "ALL" ? "/dashboard/orders" : `/dashboard/orders?status=${status}`} className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${selectedStatus === status ? "bg-blue-600 text-white" : "border bg-white text-gray-600 hover:border-blue-300 hover:text-blue-700 dark:bg-gray-900 dark:text-gray-300"}`}>{status === "ALL" ? "All orders" : status[0] + status.slice(1).toLowerCase()}</Link>)}</nav>
+
       {orders.length === 0 ? (
         <div className="text-center py-16 bg-white dark:bg-gray-900 border rounded-2xl p-8 space-y-3">
           <ShoppingBag className="h-12 w-12 text-gray-300 mx-auto" />
           <h3 className="text-base font-bold text-gray-900 dark:text-white">No Orders Found</h3>
           <p className="text-xs text-gray-500">
-            You haven&apos;t placed or received any orders yet.
+            {selectedStatus === "ALL" ? "You haven&apos;t placed or received any orders yet." : `No ${selectedStatus.toLowerCase()} orders match this filter.`}
           </p>
           <Button size="sm" className="bg-blue-600 text-white font-bold" asChild>
             <Link href="/dashboard/marketplace">Explore Marketplace</Link>
