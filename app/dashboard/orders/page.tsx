@@ -146,7 +146,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                       <p className="text-gray-500 mt-0.5">
                         Qty: {item.quantity} x ₦{item.price.toLocaleString()} • Vendor: <span className="font-semibold">{item.product.vendor?.businessName || "Computer Village Shop"}</span>
                       </p>
-                      {order.userId === user?.id && order.status === "DELIVERED" && <Link href={`/dashboard/marketplace/${item.product.id}#reviews`} className="mt-1 inline-block font-bold text-blue-600 hover:underline">Rate this product</Link>}
+                      {order.userId === user?.id && <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">{item.product.vendor?.userId && <Link href={`/dashboard/messages?receiverId=${item.product.vendor.userId}`} className="font-bold text-blue-600 hover:underline">Message vendor</Link>}{order.status === "DELIVERED" && <Link href={`/dashboard/marketplace/${item.product.id}#reviews`} className="font-bold text-blue-600 hover:underline">Rate this product</Link>}</div>}
                     </div>
                     <span className="font-bold text-gray-900 dark:text-white">
                       ₦{(item.quantity * item.price).toLocaleString()}
