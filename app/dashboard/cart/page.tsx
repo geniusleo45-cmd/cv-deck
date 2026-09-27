@@ -22,6 +22,13 @@ export default function CartPage() {
   const [reorderMessage, setReorderMessage] = useState("");
   const cartVendorIds = new Set(items.map((item) => item.vendorId).filter((vendorId): vendorId is string => Boolean(vendorId)));
   const multipleVendors = cartVendorIds.size > 1;
+  const cartVendors = [...new Map(items.filter((item) => item.vendorId && item.vendorName).map((item) => [item.vendorId!, item.vendorName!])).entries()];
+
+  const keepVendorItems = (vendorId: string, vendorName: string) => {
+    const itemsToRemove = items.filter((item) => item.vendorId !== vendorId);
+    if (!window.confirm(`Keep only ${vendorName}'s ${items.filter((item) => item.vendorId === vendorId).length} item(s) for checkout? ${itemsToRemove.length} other item(s) will be removed from this cart.`)) return;
+    itemsToRemove.forEach((item) => removeItem(item.productId));
+  };
 
   useEffect(() => {
     const loadSavedContact = async () => {
@@ -118,7 +125,7 @@ export default function CartPage() {
         </div>
       )}
       {reorderMessage && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200">{reorderMessage}</div>}
-      {multipleVendors && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">Your cart has items from multiple shops. Complete checkout one vendor at a time so each shop can process and track delivery.</div>}
+      {multipleVendors && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200"><p>Your cart has items from multiple shops. Complete checkout one vendor at a time so each shop can process and track delivery.</p><div className="mt-3 flex flex-wrap gap-2">{cartVendors.map(([vendorId, vendorName]) => <button key={vendorId} type="button" onClick={() => keepVendorItems(vendorId, vendorName)} className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-bold text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-gray-900 dark:text-amber-200">Keep {vendorName}&apos;s items</button>)}</div></div>}
 
       <div className="sticky top-16 z-30 -mx-4 border-y bg-white/95 px-4 py-3 shadow-sm backdrop-blur dark:bg-gray-950/95 sm:-mx-6 sm:px-6 lg:hidden">
         <button
