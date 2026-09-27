@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { ShoppingBag, ArrowRight, Trash2, Plus, Minus, CreditCard, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { SaveCartItemButton } from "@/components/cart/SaveCartItemButton";
+import Image from "next/image";
 
 export default function CartPage() {
   const { items, total, setQuantity, removeItem, clearCart } = useCart();
@@ -151,6 +152,9 @@ export default function CartPage() {
             <div className="divide-y">
               {items.map((item) => (
                 <div key={item.productId} className="py-4 flex items-center justify-between gap-4">
+                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
+                    <Image src={item.image || "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=160&q=80"} alt={item.name} fill sizes="56px" className="object-cover" />
+                  </div>
                   <div className="flex-1 min-w-0">
                     <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate">
                       {item.name}

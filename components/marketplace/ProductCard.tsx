@@ -68,6 +68,7 @@ export function ProductCard({ product, compact = false, mobileCompact = false }:
       name: product.name,
       price: product.price,
       maxQuantity: product.stock,
+      image: imageUrl,
       vendorId: product.vendor.id,
       vendorName: product.vendor.businessName,
     });

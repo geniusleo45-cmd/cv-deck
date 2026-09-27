@@ -9,6 +9,7 @@ export type CartItem = {
   price: number;
   quantity: number;
   maxQuantity: number;
+  image?: string;
   vendorId?: string;
   vendorName?: string;
 };
@@ -49,7 +50,7 @@ function readCart(rawCart: string | null): CartItem[] {
       : Math.max(1, Math.floor(item.quantity));
     const quantity = Math.min(Math.max(1, Math.floor(item.quantity)), maxQuantity);
 
-    return [{ productId: item.productId, name: item.name, price: item.price, quantity, maxQuantity, vendorId: typeof item.vendorId === "string" ? item.vendorId : undefined, vendorName: typeof item.vendorName === "string" ? item.vendorName : undefined }];
+    return [{ productId: item.productId, name: item.name, price: item.price, quantity, maxQuantity, image: typeof item.image === "string" ? item.image : undefined, vendorId: typeof item.vendorId === "string" ? item.vendorId : undefined, vendorName: typeof item.vendorName === "string" ? item.vendorName : undefined }];
   });
 }
 

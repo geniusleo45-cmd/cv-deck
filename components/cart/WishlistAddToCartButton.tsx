@@ -4,16 +4,16 @@ import { useState } from "react";
 import { Check, ShoppingBag } from "lucide-react";
 import { useCart } from "./CartProvider";
 
-type WishlistAddToCartButtonProps = { productId: string; name: string; price: number; stock: number; status: string; vendorId: string; vendorName: string };
+type WishlistAddToCartButtonProps = { productId: string; name: string; price: number; stock: number; status: string; image: string; vendorId: string; vendorName: string };
 
-export function WishlistAddToCartButton({ productId, name, price, stock, status, vendorId, vendorName }: WishlistAddToCartButtonProps) {
+export function WishlistAddToCartButton({ productId, name, price, stock, status, image, vendorId, vendorName }: WishlistAddToCartButtonProps) {
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
   const available = status === "ACTIVE" && stock > 0;
 
   function addToCart() {
     if (!available) return;
-    addItem({ productId, name, price, maxQuantity: stock, vendorId, vendorName });
+    addItem({ productId, name, price, maxQuantity: stock, image, vendorId, vendorName });
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1600);
   }

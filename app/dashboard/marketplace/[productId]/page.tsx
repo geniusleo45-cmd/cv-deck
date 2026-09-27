@@ -183,6 +183,7 @@ export default async function ProductDetailPage({
             vendorId={product.vendor.id}
             vendorName={product.vendor.businessName}
             name={product.name}
+            image={images[0]}
             price={product.price}
             stock={product.stock}
             reviews={product.reviews}

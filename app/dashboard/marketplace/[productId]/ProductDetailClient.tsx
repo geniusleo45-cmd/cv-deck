@@ -24,6 +24,7 @@ export function ProductDetailClient({
   vendorId,
   vendorName,
   name,
+  image,
   price,
   stock,
   reviews,
@@ -35,6 +36,7 @@ export function ProductDetailClient({
   vendorId: string;
   vendorName: string;
   name: string;
+  image: string;
   price: number;
   stock: number;
   reviews: ReviewItem[];
@@ -58,6 +60,7 @@ export function ProductDetailClient({
       name,
       price,
       maxQuantity: stock,
+      image,
       vendorId,
       vendorName,
     });
