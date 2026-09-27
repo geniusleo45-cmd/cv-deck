@@ -139,6 +139,8 @@ export function ProductCard({ product, compact = false, mobileCompact = false }:
             </h3>
           </Link>
 
+          {mobileCompact && <Link href={`/vendors/${product.vendor.id}`} className="mt-1 block truncate text-[11px] font-semibold text-blue-600 hover:underline sm:hidden">{product.vendor.businessName}</Link>}
+
           {!compact && <p className={`${mobileCompact ? "hidden sm:block" : ""} mt-1.5 line-clamp-2 text-xs text-gray-500`}>
             {product.description}
           </p>}
