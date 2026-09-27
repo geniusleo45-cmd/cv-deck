@@ -37,7 +37,7 @@ export default async function VendorDashboardPage() {
       })
     : [];
 
-  const totalRevenue = orders.reduce((sum, order) => {
+  const totalRevenue = orders.filter((order) => order.payment?.status === "SUCCESS" && order.status !== "CANCELLED").reduce((sum, order) => {
     const vendorItemsTotal = order.items.reduce((s, i) => s + i.price * i.quantity, 0);
     return sum + vendorItemsTotal;
   }, 0);
