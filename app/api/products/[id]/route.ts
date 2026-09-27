@@ -76,6 +76,25 @@ export async function PUT(
       },
     });
 
+    if (validated.price !== undefined && validated.price < product.price) {
+      try {
+        const savedByUsers = await prisma.wishlistItem.findMany({ where: { productId: product.id }, select: { userId: true } });
+        if (savedByUsers.length) {
+          await prisma.notification.createMany({
+            data: savedByUsers.map(({ userId }) => ({
+              userId,
+              type: "SYSTEM",
+              title: "A saved product is now cheaper",
+              message: `“${product.name}” dropped from ₦${product.price.toLocaleString()} to ₦${updatedProduct.price.toLocaleString()}.`,
+              link: `/dashboard/marketplace/${product.id}`,
+            })),
+          });
+        }
+      } catch (notificationError) {
+        console.error("Unable to send saved-product price alerts:", notificationError);
+      }
+    }
+
     return NextResponse.json(updatedProduct);
   } catch (error: any) {
     if (error.name === "ZodError") {
