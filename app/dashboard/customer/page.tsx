@@ -56,13 +56,13 @@ export default async function CustomerDashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm space-y-1">
+        <Link href="/dashboard/orders" className="rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md space-y-1">
           <div className="flex items-center justify-between text-xs text-gray-500 font-semibold">
             <span>Total Orders</span>
             <ShoppingBag className="h-4 w-4 text-blue-600" />
           </div>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalOrders}</p>
-        </div>
+        </Link>
 
         <Link href="/dashboard/notifications" className="rounded-2xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:bg-gray-900 space-y-1">
           <div className="flex items-center justify-between text-xs text-gray-500 font-semibold">
