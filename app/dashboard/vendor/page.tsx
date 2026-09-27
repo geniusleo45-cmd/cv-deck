@@ -37,10 +37,12 @@ export default async function VendorDashboardPage() {
       })
     : [];
 
-  const totalRevenue = orders.filter((order) => order.payment?.status === "SUCCESS" && order.status !== "CANCELLED").reduce((sum, order) => {
+  const paidOrders = orders.filter((order) => order.payment?.status === "SUCCESS" && order.status !== "CANCELLED");
+  const totalRevenue = paidOrders.reduce((sum, order) => {
     const vendorItemsTotal = order.items.reduce((s, i) => s + i.price * i.quantity, 0);
     return sum + vendorItemsTotal;
   }, 0);
+  const averagePaidOrderValue = paidOrders.length ? totalRevenue / paidOrders.length : 0;
 
   const verificationStatus = vendor?.status || "PENDING";
   const latestVerification = vendor?.verifications[0];
@@ -100,7 +102,7 @@ export default async function VendorDashboardPage() {
       )}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <div className="rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-xs text-gray-500 font-semibold">
             <span>Total Sales Revenue</span>
@@ -123,6 +125,14 @@ export default async function VendorDashboardPage() {
             <ShoppingBag className="h-4 w-4 text-purple-600" />
           </div>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">{orders.length}</p>
+        </div>
+
+        <div className="rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm space-y-1">
+          <div className="flex items-center justify-between text-xs text-gray-500 font-semibold">
+            <span>Average Paid Order</span>
+            <DollarSign className="h-4 w-4 text-blue-600" />
+          </div>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">₦{averagePaidOrderValue.toLocaleString()}</p>
         </div>
 
         <div className="rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm space-y-1">
