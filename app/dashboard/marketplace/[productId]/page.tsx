@@ -122,10 +122,8 @@ export default async function ProductDetailPage({
               <span className="text-3xl font-black text-gray-900 dark:text-white">
                 ₦{product.price.toLocaleString()}
               </span>
-              {product.compareAtPrice && (
-                <span className="text-base text-gray-400 line-through">
-                  ₦{product.compareAtPrice.toLocaleString()}
-                </span>
+              {product.compareAtPrice && product.compareAtPrice > product.price && (
+                <><span className="text-base text-gray-400 line-through">₦{product.compareAtPrice.toLocaleString()}</span><span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">Save {Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)}%</span></>
               )}
             </div>
 

@@ -172,9 +172,7 @@ export function ProductCard({ product, compact = false, mobileCompact = false }:
               ₦{product.price.toLocaleString()}
             </div>
             {!compact && product.compareAtPrice && product.compareAtPrice > product.price && (
-              <div className="text-xs text-gray-400 line-through">
-                ₦{product.compareAtPrice.toLocaleString()}
-              </div>
+              <div className="flex items-center gap-2 text-xs"><span className="text-gray-400 line-through">₦{product.compareAtPrice.toLocaleString()}</span><span className="font-bold text-emerald-600">Save {Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)}%</span></div>
             )}
             {product.stock > 0 && product.stock <= 5 && <p className="mt-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300">Only {product.stock} left</p>}
           </div>
