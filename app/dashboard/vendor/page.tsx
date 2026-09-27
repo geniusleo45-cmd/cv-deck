@@ -121,10 +121,10 @@ export default async function VendorDashboardPage() {
 
         <div className="rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-xs text-gray-500 font-semibold">
-            <span>Orders Received</span>
+            <span>Paid Orders</span>
             <ShoppingBag className="h-4 w-4 text-purple-600" />
           </div>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{orders.length}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{paidOrders.length}</p>
         </div>
 
         <div className="rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm space-y-1">
