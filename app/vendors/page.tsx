@@ -16,7 +16,7 @@ export default async function PublicVendorsPage({ searchParams }: { searchParams
     where: { status: "VERIFIED", ...(search ? { OR: [{ businessName: { contains: search, mode: "insensitive" } }, { officeAddress: { contains: search, mode: "insensitive" } }] } : {}) },
     include: {
       user: { select: { id: true, name: true, email: true, phone: true } },
-      _count: { select: { products: true } },
+      _count: { select: { products: { where: { status: "ACTIVE" } } } },
     },
     orderBy: { rating: "desc" },
   });
