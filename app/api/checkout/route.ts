@@ -29,6 +29,9 @@ export async function POST(req: Request) {
     if (products.length === 0) {
       return NextResponse.json({ error: "Shopping cart is empty" }, { status: 400 });
     }
+    if (new Set(products.map((product) => product.vendorId)).size > 1) {
+      return NextResponse.json({ error: "Please check out items from one vendor at a time. This ensures each shop can process and track your delivery correctly." }, { status: 400 });
+    }
 
     const totalAmount = products.reduce((acc, product) => acc + product.price * (quantities.get(product.id) || 0), 0);
 
