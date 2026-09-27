@@ -76,7 +76,9 @@ export async function PUT(
       },
     });
 
-    if (validated.price !== undefined && validated.price < product.price) {
+    const priceDropped = validated.price !== undefined && validated.price < product.price;
+    const backInStock = (product.stock <= 0 || product.status !== "ACTIVE") && updatedProduct.stock > 0 && updatedProduct.status === "ACTIVE";
+    if (priceDropped || backInStock) {
       try {
         const savedByUsers = await prisma.wishlistItem.findMany({ where: { productId: product.id }, select: { userId: true } });
         if (savedByUsers.length) {
@@ -84,14 +86,14 @@ export async function PUT(
             data: savedByUsers.map(({ userId }) => ({
               userId,
               type: "SYSTEM",
-              title: "A saved product is now cheaper",
-              message: `“${product.name}” dropped from ₦${product.price.toLocaleString()} to ₦${updatedProduct.price.toLocaleString()}.`,
+              title: priceDropped && backInStock ? "A saved product is back and cheaper" : priceDropped ? "A saved product is now cheaper" : "A saved product is back in stock",
+              message: priceDropped && backInStock ? `“${product.name}” is available again and dropped from ₦${product.price.toLocaleString()} to ₦${updatedProduct.price.toLocaleString()}.` : priceDropped ? `“${product.name}” dropped from ₦${product.price.toLocaleString()} to ₦${updatedProduct.price.toLocaleString()}.` : `“${product.name}” is available again with ${updatedProduct.stock} unit${updatedProduct.stock === 1 ? "" : "s"} in stock.`,
               link: `/dashboard/marketplace/${product.id}`,
             })),
           });
         }
       } catch (notificationError) {
-        console.error("Unable to send saved-product price alerts:", notificationError);
+        console.error("Unable to send saved-product alerts:", notificationError);
       }
     }
 
