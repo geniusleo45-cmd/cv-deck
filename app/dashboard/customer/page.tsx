@@ -2,12 +2,12 @@ import { getCurrentUser } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, Package, Store, Clock, ArrowRight, Truck } from "lucide-react";
+import { ShoppingBag, Package, Store, Clock, ArrowRight, Truck, Heart } from "lucide-react";
 
 export default async function CustomerDashboardPage() {
   const user = await getCurrentUser();
 
-  const [orders, totalOrders, activeDeliveries, notificationsCount] = await Promise.all([
+  const [orders, totalOrders, activeDeliveries, notificationsCount, savedProductsCount] = await Promise.all([
     prisma.order.findMany({
       where: { userId: user?.id },
       include: {
@@ -29,6 +29,7 @@ export default async function CustomerDashboardPage() {
     prisma.notification.count({
       where: { userId: user?.id, read: false },
     }),
+    prisma.wishlistItem.count({ where: { userId: user?.id } }),
   ]);
 
   return (
@@ -54,7 +55,7 @@ export default async function CustomerDashboardPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-xs text-gray-500 font-semibold">
             <span>Total Orders</span>
@@ -77,6 +78,14 @@ export default async function CustomerDashboardPage() {
             <Truck className="h-4 w-4 text-emerald-500" />
           </div>
           <p className="text-2xl font-bold text-emerald-600">{activeDeliveries}</p>
+        </Link>
+
+        <Link href="/dashboard/wishlist" className="rounded-2xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:bg-gray-900 space-y-1">
+          <div className="flex items-center justify-between text-xs text-gray-500 font-semibold">
+            <span>Saved Products</span>
+            <Heart className="h-4 w-4 text-red-500" />
+          </div>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{savedProductsCount}</p>
         </Link>
       </div>
 
