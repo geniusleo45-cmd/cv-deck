@@ -12,6 +12,7 @@ export function BuyAgainButton({ items }: { items: ReorderItem[] }) {
   const router = useRouter();
   const [adding, setAdding] = useState(false);
   const availableItems = items.filter((item) => item.status === "ACTIVE" && item.stock > 0);
+  const unavailableCount = items.length - availableItems.length;
 
   function buyAgain() {
     setAdding(true);
@@ -19,7 +20,9 @@ export function BuyAgainButton({ items }: { items: ReorderItem[] }) {
       const quantity = Math.min(item.quantity, item.stock);
       for (let index = 0; index < quantity; index += 1) addItem({ productId: item.productId, name: item.name, price: item.price, maxQuantity: item.stock });
     }
-    router.push("/dashboard/cart");
+    const params = new URLSearchParams({ reordered: String(availableItems.length) });
+    if (unavailableCount) params.set("unavailable", String(unavailableCount));
+    router.push(`/dashboard/cart?${params.toString()}`);
   }
 
   if (!availableItems.length) return <span className="text-xs font-semibold text-gray-500">These items are no longer available.</span>;

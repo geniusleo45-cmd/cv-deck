@@ -19,6 +19,7 @@ export default function CartPage() {
   const [paymentProvider, setPaymentProvider] = useState<"FLUTTERWAVE" | "PAYSTACK">("FLUTTERWAVE");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [reorderMessage, setReorderMessage] = useState("");
 
   useEffect(() => {
     const loadSavedContact = async () => {
@@ -34,6 +35,13 @@ export default function CartPage() {
     };
 
     loadSavedContact();
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const reordered = Number(params.get("reordered") || 0);
+    const unavailable = Number(params.get("unavailable") || 0);
+    if (reordered) setReorderMessage(unavailable ? `${reordered} item${reordered === 1 ? " was" : "s were"} added to your cart. ${unavailable} unavailable item${unavailable === 1 ? " was" : "s were"} skipped.` : `${reordered} item${reordered === 1 ? " was" : "s were"} added to your cart.`);
   }, []);
 
   const handleCheckout = async (e: React.FormEvent) => {
@@ -103,6 +111,7 @@ export default function CartPage() {
           {error}
         </div>
       )}
+      {reorderMessage && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200">{reorderMessage}</div>}
 
       <div className="sticky top-16 z-30 -mx-4 border-y bg-white/95 px-4 py-3 shadow-sm backdrop-blur dark:bg-gray-950/95 sm:-mx-6 sm:px-6 lg:hidden">
         <button
