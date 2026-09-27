@@ -7,11 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ShoppingBag, ArrowRight, Trash2, Plus, Minus, CreditCard, ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { SaveCartItemButton } from "@/components/cart/SaveCartItemButton";
 
 export default function CartPage() {
   const { items, total, setQuantity, removeItem, clearCart } = useCart();
-  const router = useRouter();
   const checkoutFormRef = useRef<HTMLFormElement>(null);
 
   const [shippingAddress, setShippingAddress] = useState("");
@@ -188,6 +187,8 @@ export default function CartPage() {
                     <span className="text-sm font-bold text-gray-900 dark:text-white min-w-[80px] text-right">
                       ₦{(item.price * item.quantity).toLocaleString()}
                     </span>
+
+                    <SaveCartItemButton productId={item.productId} />
 
                     <button
                       onClick={() => removeItem(item.productId)}
