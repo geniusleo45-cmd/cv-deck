@@ -10,13 +10,13 @@ import { RequestSupportButton } from "@/components/RequestSupportButton";
 import { BuyAgainButton } from "@/components/cart/BuyAgainButton";
 
 const orderStatuses = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"] as const;
-const orderFilters = ["ALL", ...orderStatuses] as const;
+const orderFilters = ["ALL", "ACTIVE", ...orderStatuses] as const;
 
 export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const user = await getCurrentUser();
   const query = await searchParams;
   const selectedStatus = orderFilters.includes(query.status as (typeof orderFilters)[number]) ? query.status as (typeof orderFilters)[number] : "ALL";
-  const orderStatus = selectedStatus === "ALL" ? undefined : selectedStatus;
+  const orderStatus = selectedStatus === "ACTIVE" ? { in: ["PROCESSING", "SHIPPED"] } : selectedStatus === "ALL" ? undefined : selectedStatus;
 
   let orders: any[] = [];
 
@@ -102,14 +102,14 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
         </p>
       </div>
 
-      <nav aria-label="Order status filters" className="flex flex-wrap gap-2">{orderFilters.map((status) => <Link key={status} href={status === "ALL" ? "/dashboard/orders" : `/dashboard/orders?status=${status}`} className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${selectedStatus === status ? "bg-blue-600 text-white" : "border bg-white text-gray-600 hover:border-blue-300 hover:text-blue-700 dark:bg-gray-900 dark:text-gray-300"}`}>{status === "ALL" ? "All orders" : status[0] + status.slice(1).toLowerCase()}</Link>)}</nav>
+      <nav aria-label="Order status filters" className="flex flex-wrap gap-2">{orderFilters.map((status) => <Link key={status} href={status === "ALL" ? "/dashboard/orders" : `/dashboard/orders?status=${status}`} className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${selectedStatus === status ? "bg-blue-600 text-white" : "border bg-white text-gray-600 hover:border-blue-300 hover:text-blue-700 dark:bg-gray-900 dark:text-gray-300"}`}>{status === "ALL" ? "All orders" : status === "ACTIVE" ? "Active deliveries" : status[0] + status.slice(1).toLowerCase()}</Link>)}</nav>
 
       {orders.length === 0 ? (
         <div className="text-center py-16 bg-white dark:bg-gray-900 border rounded-2xl p-8 space-y-3">
           <ShoppingBag className="h-12 w-12 text-gray-300 mx-auto" />
           <h3 className="text-base font-bold text-gray-900 dark:text-white">No Orders Found</h3>
           <p className="text-xs text-gray-500">
-            {selectedStatus === "ALL" ? "You haven&apos;t placed or received any orders yet." : `No ${selectedStatus.toLowerCase()} orders match this filter.`}
+            {selectedStatus === "ALL" ? "You haven&apos;t placed or received any orders yet." : selectedStatus === "ACTIVE" ? "No active deliveries match this filter." : `No ${selectedStatus.toLowerCase()} orders match this filter.`}
           </p>
           <Button size="sm" className="bg-blue-600 text-white font-bold" asChild>
             <Link href="/dashboard/marketplace">Explore Marketplace</Link>
