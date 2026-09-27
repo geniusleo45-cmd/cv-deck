@@ -87,6 +87,11 @@ export default function MarketplacePage() {
   }, []);
 
   useEffect(() => {
+    const categoryId = new URLSearchParams(window.location.search).get("category");
+    if (categoryId) setFilters((current) => current.categoryId === categoryId ? current : { ...current, categoryId });
+  }, []);
+
+  useEffect(() => {
     const controller = new AbortController();
     const timer = setTimeout(() => fetchProducts(controller.signal), 300);
     return () => {
