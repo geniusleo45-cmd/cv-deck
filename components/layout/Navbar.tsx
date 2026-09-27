@@ -70,6 +70,14 @@ export function Navbar() {
           >
             <Briefcase className="h-4 w-4" /> Recruiter Hub
           </Link>
+          {session && (
+            <Link
+              href="/dashboard"
+              className="text-gray-700 hover:text-blue-600 dark:text-gray-300 transition-colors flex items-center gap-1"
+            >
+              <LayoutDashboard className="h-4 w-4" /> Dashboard
+            </Link>
+          )}
         </nav>
 
         <details ref={mobileMenuRef} open={mobileMenuOpen} onToggle={(event) => setMobileMenuOpen(event.currentTarget.open)} className="group relative md:hidden">
