@@ -98,7 +98,7 @@ export default async function HomePage() {
               {categories.map((cat) => (
                 <Link
                   key={cat.id}
-                  href={`/dashboard/marketplace?categoryId=${cat.id}`}
+                  href={`/dashboard/marketplace?category=${cat.id}`}
                   className="group p-5 rounded-2xl border bg-gray-50/50 dark:bg-gray-800/40 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300 transition-all text-center space-y-2"
                 >
                   <div className="h-10 w-10 mx-auto rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">

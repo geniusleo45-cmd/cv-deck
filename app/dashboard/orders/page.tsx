@@ -8,15 +8,26 @@ import { CancelPendingOrderButton } from "@/components/payments/CancelPendingOrd
 import { CopyTrackingButton } from "@/components/CopyTrackingButton";
 import { RequestSupportButton } from "@/components/RequestSupportButton";
 import { BuyAgainButton } from "@/components/cart/BuyAgainButton";
+import { OrderStatus } from "@prisma/client";
 
-const orderStatuses = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"] as const;
+const orderStatuses = [
+  OrderStatus.PENDING,
+  OrderStatus.PROCESSING,
+  OrderStatus.SHIPPED,
+  OrderStatus.DELIVERED,
+  OrderStatus.CANCELLED,
+] as const;
 const orderFilters = ["ALL", "ACTIVE", ...orderStatuses] as const;
 
 export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const user = await getCurrentUser();
   const query = await searchParams;
   const selectedStatus = orderFilters.includes(query.status as (typeof orderFilters)[number]) ? query.status as (typeof orderFilters)[number] : "ALL";
-  const orderStatus = selectedStatus === "ACTIVE" ? { in: ["PROCESSING", "SHIPPED"] } : selectedStatus === "ALL" ? undefined : selectedStatus;
+  const orderStatus: OrderStatus | { in: OrderStatus[] } | undefined = selectedStatus === "ACTIVE"
+    ? { in: [OrderStatus.PROCESSING, OrderStatus.SHIPPED] }
+    : selectedStatus === "ALL"
+      ? undefined
+      : selectedStatus;
 
   let orders: any[] = [];
 
