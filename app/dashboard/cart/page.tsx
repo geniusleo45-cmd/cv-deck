@@ -30,6 +30,11 @@ export default function CartPage() {
     itemsToRemove.forEach((item) => removeItem(item.productId));
   };
 
+  const emptyCart = () => {
+    if (!window.confirm("Remove every item from your cart?")) return;
+    clearCart();
+  };
+
   useEffect(() => {
     const loadSavedContact = async () => {
       try {
@@ -142,9 +147,7 @@ export default function CartPage() {
         {/* Cart Item List */}
         <div className="lg:col-span-2 space-y-4">
           <div className="rounded-2xl border bg-white dark:bg-gray-900 p-6 shadow-sm space-y-4">
-            <h2 className="text-base font-bold text-gray-900 dark:text-white border-b pb-3">
-              Order Items ({items.length})
-            </h2>
+            <div className="flex items-center justify-between gap-3 border-b pb-3"><h2 className="text-base font-bold text-gray-900 dark:text-white">Order Items ({items.length})</h2><button type="button" onClick={emptyCart} className="text-xs font-bold text-red-600 hover:underline">Clear cart</button></div>
 
             <div className="divide-y">
               {items.map((item) => (
