@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ProductDetailClient } from "./ProductDetailClient";
 import { ProductImageGallery } from "./ProductImageGallery";
 import { ShieldCheck, MapPin, Star, ArrowLeft, Store, MessageSquare } from "lucide-react";
+import { ProductCard } from "@/components/marketplace/ProductCard";
 
 export default async function ProductDetailPage({
   params,
@@ -41,6 +42,13 @@ export default async function ProductDetailPage({
   if (!product || ((product.status !== "ACTIVE" || product.vendor.status !== "VERIFIED") && sessionUser?.role !== "ADMIN")) {
     notFound();
   }
+
+  const relatedProducts = await prisma.product.findMany({
+    where: { categoryId: product.categoryId, id: { not: product.id }, status: "ACTIVE", vendor: { status: "VERIFIED" } },
+    include: { vendor: true, category: true, wishlistItems: { where: { userId: sessionUser?.id || "__anonymous__" }, select: { id: true } } },
+    orderBy: { createdAt: "desc" },
+    take: 4,
+  });
 
   const reviewEligibility = sessionUser?.id
     ? await Promise.all([
@@ -180,6 +188,8 @@ export default async function ProductDetailPage({
           />
         </div>
       </div>
+
+      {relatedProducts.length > 0 && <section className="space-y-4"><div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-xl font-black text-gray-900 dark:text-white">More in {product.category.name}</h2><p className="text-sm text-gray-500">Compare related active listings from verified Computer Village vendors.</p></div><Link href={`/dashboard/marketplace?category=${product.categoryId}`} className="text-sm font-bold text-blue-600 hover:underline">Browse category</Link></div><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{relatedProducts.map((relatedProduct) => <ProductCard key={relatedProduct.id} product={relatedProduct} />)}</div></section>}
     </div>
   );
 }
