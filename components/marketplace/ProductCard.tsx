@@ -174,6 +174,7 @@ export function ProductCard({ product, compact = false, mobileCompact = false }:
                 ₦{product.compareAtPrice.toLocaleString()}
               </div>
             )}
+            {product.stock > 0 && product.stock <= 5 && <p className="mt-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300">Only {product.stock} left</p>}
           </div>
 
           <Button
