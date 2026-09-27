@@ -63,13 +63,13 @@ export default async function CustomerDashboardPage() {
           <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalOrders}</p>
         </div>
 
-        <div className="rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm space-y-1">
+        <Link href="/dashboard/notifications" className="rounded-2xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:bg-gray-900 space-y-1">
           <div className="flex items-center justify-between text-xs text-gray-500 font-semibold">
             <span>Unread Notifications</span>
             <Clock className="h-4 w-4 text-amber-500" />
           </div>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">{notificationsCount}</p>
-        </div>
+        </Link>
 
         <Link href="/dashboard/orders?status=ACTIVE" className="rounded-2xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:bg-gray-900 space-y-1">
           <div className="flex items-center justify-between text-xs text-gray-500 font-semibold">
