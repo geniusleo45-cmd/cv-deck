@@ -88,7 +88,7 @@ export function ProductDetailClient({
 
   const toggleWishlist = async () => {
     if (!sessionUserId) {
-      router.push("/login");
+      router.push(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
     setSavingWishlist(true);

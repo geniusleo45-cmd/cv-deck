@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart/CartProvider";
 import { ShoppingBag, ShieldCheck, MapPin, Star, CheckCircle, Heart } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface ProductCardProps {
   compact?: boolean;
@@ -37,6 +38,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product, compact = false, mobileCompact = false }: ProductCardProps) {
   const { addItem } = useCart();
+  const router = useRouter();
   const [added, setAdded] = useState(false);
   const [saved, setSaved] = useState((product.wishlistItems?.length ?? 0) > 0);
   const [saving, setSaving] = useState(false);
@@ -79,6 +81,10 @@ export function ProductCard({ product, compact = false, mobileCompact = false }:
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId: product.id }),
       });
+      if (response.status === 401) {
+        router.push(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
+        return;
+      }
       if (!response.ok) throw new Error("Unable to update saved products.");
       setSaved((current) => !current);
     } catch (error) {
