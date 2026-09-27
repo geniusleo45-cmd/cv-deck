@@ -44,6 +44,7 @@ export default async function VendorDashboardPage() {
 
   const verificationStatus = vendor?.status || "PENDING";
   const latestVerification = vendor?.verifications[0];
+  const activeProductCount = vendor?.products.filter((product) => product.status === "ACTIVE").length || 0;
   const lowStockProducts = vendor?.products.filter((product) => product.status === "ACTIVE" && product.stock <= 5) || [];
 
   return (
@@ -113,7 +114,7 @@ export default async function VendorDashboardPage() {
             <span>Active Products</span>
             <Package className="h-4 w-4 text-blue-600" />
           </div>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{vendor?.products.length || 0}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{activeProductCount}</p>
         </div>
 
         <div className="rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm space-y-1">
