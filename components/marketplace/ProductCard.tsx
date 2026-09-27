@@ -68,6 +68,8 @@ export function ProductCard({ product, compact = false, mobileCompact = false }:
       name: product.name,
       price: product.price,
       maxQuantity: product.stock,
+      vendorId: product.vendor.id,
+      vendorName: product.vendor.businessName,
     });
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1600);

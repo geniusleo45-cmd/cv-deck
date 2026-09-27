@@ -5,7 +5,7 @@ import { ShoppingCart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCart } from "./CartProvider";
 
-type ReorderItem = { productId: string; name: string; price: number; stock: number; status: string; quantity: number };
+type ReorderItem = { productId: string; name: string; price: number; stock: number; status: string; quantity: number; vendorId?: string; vendorName?: string };
 
 export function BuyAgainButton({ items }: { items: ReorderItem[] }) {
   const { addItem } = useCart();
@@ -18,7 +18,7 @@ export function BuyAgainButton({ items }: { items: ReorderItem[] }) {
     setAdding(true);
     for (const item of availableItems) {
       const quantity = Math.min(item.quantity, item.stock);
-      for (let index = 0; index < quantity; index += 1) addItem({ productId: item.productId, name: item.name, price: item.price, maxQuantity: item.stock });
+      for (let index = 0; index < quantity; index += 1) addItem({ productId: item.productId, name: item.name, price: item.price, maxQuantity: item.stock, vendorId: item.vendorId, vendorName: item.vendorName });
     }
     const params = new URLSearchParams({ reordered: String(availableItems.length) });
     if (unavailableCount) params.set("unavailable", String(unavailableCount));

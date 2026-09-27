@@ -182,6 +182,8 @@ export default async function ProductDetailPage({
           {/* Interactive Client Add-to-Cart & Review Submission */}
           <ProductDetailClient
             productId={product.id}
+            vendorId={product.vendor.id}
+            vendorName={product.vendor.businessName}
             name={product.name}
             price={product.price}
             stock={product.stock}

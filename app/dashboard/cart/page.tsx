@@ -20,6 +20,8 @@ export default function CartPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [reorderMessage, setReorderMessage] = useState("");
+  const cartVendorIds = new Set(items.map((item) => item.vendorId).filter((vendorId): vendorId is string => Boolean(vendorId)));
+  const multipleVendors = cartVendorIds.size > 1;
 
   useEffect(() => {
     const loadSavedContact = async () => {
@@ -47,6 +49,10 @@ export default function CartPage() {
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (multipleVendors) {
+      setError("Please check out items from one vendor at a time. Remove items from other shops to continue.");
+      return;
+    }
     setLoading(true);
 
     try {
@@ -112,6 +118,7 @@ export default function CartPage() {
         </div>
       )}
       {reorderMessage && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200">{reorderMessage}</div>}
+      {multipleVendors && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">Your cart has items from multiple shops. Complete checkout one vendor at a time so each shop can process and track delivery.</div>}
 
       <div className="sticky top-16 z-30 -mx-4 border-y bg-white/95 px-4 py-3 shadow-sm backdrop-blur dark:bg-gray-950/95 sm:-mx-6 sm:px-6 lg:hidden">
         <button
@@ -142,6 +149,7 @@ export default function CartPage() {
                     <p className="text-xs text-blue-600 font-bold mt-1">
                       ₦{item.price.toLocaleString()}
                     </p>
+                    {item.vendorName && <p className="mt-1 text-[11px] text-gray-500">Sold by {item.vendorName}</p>}
                   </div>
 
                   <div className="flex items-center gap-3">
@@ -251,7 +259,7 @@ export default function CartPage() {
 
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loading || multipleVendors}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-500/20 gap-2 text-sm"
             >
               {loading ? "Processing Order..." : "Confirm & Pay Now"} <ArrowRight className="h-4 w-4" />

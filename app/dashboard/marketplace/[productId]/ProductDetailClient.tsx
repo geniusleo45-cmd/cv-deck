@@ -21,6 +21,8 @@ interface ReviewItem {
 
 export function ProductDetailClient({
   productId,
+  vendorId,
+  vendorName,
   name,
   price,
   stock,
@@ -30,6 +32,8 @@ export function ProductDetailClient({
   initiallyWishlisted,
 }: {
   productId: string;
+  vendorId: string;
+  vendorName: string;
   name: string;
   price: number;
   stock: number;
@@ -54,6 +58,8 @@ export function ProductDetailClient({
       name,
       price,
       maxQuantity: stock,
+      vendorId,
+      vendorName,
     });
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);

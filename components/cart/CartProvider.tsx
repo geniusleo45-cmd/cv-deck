@@ -9,6 +9,8 @@ export type CartItem = {
   price: number;
   quantity: number;
   maxQuantity: number;
+  vendorId?: string;
+  vendorName?: string;
 };
 
 type CartContextValue = {
@@ -47,7 +49,7 @@ function readCart(rawCart: string | null): CartItem[] {
       : Math.max(1, Math.floor(item.quantity));
     const quantity = Math.min(Math.max(1, Math.floor(item.quantity)), maxQuantity);
 
-    return [{ productId: item.productId, name: item.name, price: item.price, quantity, maxQuantity }];
+    return [{ productId: item.productId, name: item.name, price: item.price, quantity, maxQuantity, vendorId: typeof item.vendorId === "string" ? item.vendorId : undefined, vendorName: typeof item.vendorName === "string" ? item.vendorName : undefined }];
   });
 }
 

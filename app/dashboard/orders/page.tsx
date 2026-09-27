@@ -191,7 +191,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                   <PayOrderButton orderId={order.id} provider={order.payment?.provider === "PAYSTACK" ? "PAYSTACK" : "FLUTTERWAVE"} />
                 </div>
               )}
-              {order.userId === user?.id && order.status === "DELIVERED" && <div className="flex justify-end border-t pt-3"><BuyAgainButton items={order.items.map((item: any) => ({ productId: item.product.id, name: item.product.name, price: item.product.price, stock: item.product.stock, status: item.product.status, quantity: item.quantity }))} /></div>}
+              {order.userId === user?.id && order.status === "DELIVERED" && <div className="flex justify-end border-t pt-3"><BuyAgainButton items={order.items.map((item: any) => ({ productId: item.product.id, name: item.product.name, price: item.product.price, stock: item.product.stock, status: item.product.status, quantity: item.quantity, vendorId: item.product.vendor?.id, vendorName: item.product.vendor?.businessName }))} /></div>}
               {order.userId === user?.id && order.payment?.status === "SUCCESS" && order.status !== "CANCELLED" && (
                 <div className="flex justify-end border-t pt-3"><RequestSupportButton orderId={order.id} disputeStatus={order.dispute?.status} adminNote={order.dispute?.adminNote} supportCreatedAt={order.dispute?.createdAt.toISOString()} supportUpdatedAt={order.dispute?.updatedAt.toISOString()} /></div>
               )}
