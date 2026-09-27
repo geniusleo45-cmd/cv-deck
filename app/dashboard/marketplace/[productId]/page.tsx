@@ -134,7 +134,7 @@ export default async function ProductDetailPage({
             </p>
 
             {/* Vendor Card Box */}
-            <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/60 border flex items-center justify-between">
+            <div className="flex flex-col justify-between gap-3 rounded-2xl border bg-gray-50 p-4 dark:bg-gray-800/60 sm:flex-row sm:items-center">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-700 font-bold text-sm">
                   <Store className="h-5 w-5" />
@@ -150,11 +150,15 @@ export default async function ProductDetailPage({
                 </div>
               </div>
 
-              <Button size="sm" variant="outline" asChild className="gap-1 text-xs font-bold">
+              <div className="flex shrink-0 flex-wrap gap-2"><Button size="sm" variant="outline" asChild className="gap-1 text-xs font-bold">
+                <Link href={`/vendors/${product.vendor.id}`}>
+                  <Store className="h-3.5 w-3.5" /> Visit shop
+                </Link>
+              </Button><Button size="sm" variant="outline" asChild className="gap-1 text-xs font-bold">
                 <Link href={`/dashboard/messages?receiverId=${product.vendor.user.id}`}>
                   <MessageSquare className="h-3.5 w-3.5" /> Message Vendor
                 </Link>
-              </Button>
+              </Button></div>
             </div>
 
             {/* Technical Specifications */}
