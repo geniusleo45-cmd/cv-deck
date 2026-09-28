@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Laptop, ArrowRight } from "lucide-react";
+import { Laptop, ArrowRight, CheckCircle } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,10 +16,12 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [callbackUrl, setCallbackUrl] = useState("/dashboard");
+  const [registered, setRegistered] = useState(false);
 
   useEffect(() => {
     const requestedUrl = new URLSearchParams(window.location.search).get("callbackUrl");
     if (requestedUrl?.startsWith("/") && !requestedUrl.startsWith("//")) setCallbackUrl(requestedUrl);
+    setRegistered(new URLSearchParams(window.location.search).get("registered") === "true");
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,6 +69,12 @@ export default function LoginPage() {
         {error && (
           <div className="p-3 text-xs font-semibold text-red-600 bg-red-50 dark:bg-red-950/40 rounded-xl border border-red-200 text-center">
             {error}
+          </div>
+        )}
+
+        {registered && (
+          <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
+            <CheckCircle className="h-4 w-4 shrink-0 text-emerald-600" /> Your account was created successfully. Sign in to continue.
           </div>
         )}
 
