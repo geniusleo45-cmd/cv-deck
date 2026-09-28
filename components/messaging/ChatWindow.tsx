@@ -80,6 +80,7 @@ export function ChatWindow({ initialReceiverId, initialConversationId }: { initi
       if (res.ok) {
         const data = await res.json();
         setMessages(data);
+        window.dispatchEvent(new Event("messages-updated"));
       }
     } catch (e) {
       console.error(e);
