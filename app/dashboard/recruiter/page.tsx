@@ -45,7 +45,7 @@ export default async function RecruiterDashboardPage() {
 
       {/* Recruiter Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm space-y-1">
+        <Link href="/vendors" className="rounded-2xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:bg-gray-900 space-y-1">
           <div className="flex items-center justify-between text-xs text-gray-500 font-semibold">
             <span>Verified Computer Village Vendors</span>
             <ShieldCheck className="h-4 w-4 text-purple-600" />
@@ -53,7 +53,7 @@ export default async function RecruiterDashboardPage() {
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
             {vendors.length}
           </p>
-        </div>
+        </Link>
 
         <div className="rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-xs text-gray-500 font-semibold">
