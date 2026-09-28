@@ -63,6 +63,10 @@ export function ProductCard({ product, compact = false, mobileCompact = false }:
   };
 
   const handleAddToCart = () => {
+    if (added) {
+      router.push("/dashboard/cart");
+      return;
+    }
     addItem({
       productId: product.id,
       name: product.name,
@@ -185,7 +189,7 @@ export function ProductCard({ product, compact = false, mobileCompact = false }:
             className={`font-bold gap-1.5 shadow-sm text-white ${added ? "bg-emerald-600 hover:bg-emerald-700" : "bg-blue-600 hover:bg-blue-700"}`}
           >
             {added ? <CheckCircle className="h-4 w-4" /> : <ShoppingBag className="h-4 w-4" />}
-            {product.stock <= 0 ? "Sold Out" : added ? "Added" : "Add"}
+            {product.stock <= 0 ? "Sold Out" : added ? "View cart" : "Add"}
           </Button>
         </div>
       </div>

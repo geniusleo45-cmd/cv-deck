@@ -55,6 +55,10 @@ export function ProductDetailClient({
   const [linkCopied, setLinkCopied] = useState(false);
 
   const handleAddToCart = () => {
+    if (added) {
+      router.push("/dashboard/cart");
+      return;
+    }
     addItem({
       productId,
       name,
@@ -145,7 +149,7 @@ export function ProductDetailClient({
         >
           {added ? (
             <>
-              <CheckCircle className="h-5 w-5" /> Added to Shopping Cart!
+              <CheckCircle className="h-5 w-5" /> View Shopping Cart
             </>
           ) : (
             <>
@@ -174,7 +178,7 @@ export function ProductDetailClient({
           className={`w-full gap-2 font-bold ${added ? "bg-emerald-600 hover:bg-emerald-700" : "bg-blue-600 hover:bg-blue-700"}`}
         >
           {added ? <CheckCircle className="h-5 w-5" /> : <ShoppingBag className="h-5 w-5" />}
-          {stock > 0 ? (added ? "Added to Cart" : `Add to Cart · ₦${price.toLocaleString()}`) : "Sold Out"}
+          {stock > 0 ? (added ? "View Shopping Cart" : `Add to Cart · ₦${price.toLocaleString()}`) : "Sold Out"}
         </Button>
       </div>
 
