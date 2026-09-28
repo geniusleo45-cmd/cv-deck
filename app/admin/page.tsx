@@ -1,8 +1,5 @@
-export default function AdminDashboard() {
-  return (
-    <div>
-      <h1>Admin Dashboard</h1>
-      <p>Platform management</p>
-    </div>
-  );
+import { redirect } from "next/navigation";
+
+export default function AdminLegacyPage() {
+  redirect("/dashboard/admin");
 }
