@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/layout/Navbar";
 import { CartProvider } from "@/components/cart/CartProvider";
+import { ProductCard } from "@/components/marketplace/ProductCard";
 import { prisma } from "@/lib/prisma";
 import {
   Laptop,
@@ -20,8 +21,9 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [categories, verifiedVendorsCount] = await Promise.all([
+  const [categories, freshProducts, verifiedVendorsCount] = await Promise.all([
     prisma.category.findMany({ take: 6 }),
+    prisma.product.findMany({ where: { status: "ACTIVE", vendor: { status: "VERIFIED" } }, include: { category: true, vendor: true }, orderBy: { createdAt: "desc" }, take: 4 }),
     prisma.vendor.count({ where: { status: "VERIFIED" } }),
   ]);
 
@@ -107,6 +109,8 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
+
+        {freshProducts.length > 0 && <section className="border-b bg-gray-50 py-16 dark:bg-gray-950"><div className="container mx-auto space-y-8 px-4 sm:px-6"><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-2xl font-black text-gray-900 dark:text-white">Fresh marketplace listings</h2><p className="mt-1 text-sm text-gray-500">New active products from verified Computer Village vendors.</p></div><Link href="/dashboard/marketplace" className="text-sm font-bold text-blue-600 hover:underline">Explore all listings →</Link></div><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{freshProducts.map((product) => <ProductCard key={product.id} product={product} />)}</div></div></section>}
 
         {/* Verified Vendors Callout Section */}
         <section className="py-16 bg-gray-50 dark:bg-gray-950">
