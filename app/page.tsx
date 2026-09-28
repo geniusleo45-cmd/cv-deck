@@ -4,6 +4,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { ProductCard } from "@/components/marketplace/ProductCard";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/rbac";
 import {
   Laptop,
   ShieldCheck,
@@ -21,9 +22,10 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
+  const user = await getCurrentUser();
   const [categories, freshProducts, verifiedVendorsCount] = await Promise.all([
     prisma.category.findMany({ take: 6 }),
-    prisma.product.findMany({ where: { status: "ACTIVE", vendor: { status: "VERIFIED" } }, include: { category: true, vendor: true }, orderBy: { createdAt: "desc" }, take: 4 }),
+    prisma.product.findMany({ where: { status: "ACTIVE", vendor: { status: "VERIFIED" } }, include: { category: true, vendor: true, wishlistItems: { where: { userId: user?.id || "__anonymous__" }, select: { id: true } } }, orderBy: { createdAt: "desc" }, take: 4 }),
     prisma.vendor.count({ where: { status: "VERIFIED" } }),
   ]);
 
