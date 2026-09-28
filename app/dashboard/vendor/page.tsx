@@ -111,21 +111,21 @@ export default async function VendorDashboardPage() {
           <p className="text-2xl font-bold text-gray-900 dark:text-white">₦{totalRevenue.toLocaleString()}</p>
         </div>
 
-        <div className="rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm space-y-1">
+        <Link href="/dashboard/vendor/products" className="rounded-2xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:bg-gray-900 space-y-1">
           <div className="flex items-center justify-between text-xs text-gray-500 font-semibold">
             <span>Active Products</span>
             <Package className="h-4 w-4 text-blue-600" />
           </div>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">{activeProductCount}</p>
-        </div>
+        </Link>
 
-        <div className="rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm space-y-1">
+        <Link href="/dashboard/vendor/orders" className="rounded-2xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:bg-gray-900 space-y-1">
           <div className="flex items-center justify-between text-xs text-gray-500 font-semibold">
             <span>Paid Orders</span>
             <ShoppingBag className="h-4 w-4 text-purple-600" />
           </div>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">{paidOrders.length}</p>
-        </div>
+        </Link>
 
         <div className="rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-xs text-gray-500 font-semibold">
