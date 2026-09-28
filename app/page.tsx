@@ -128,7 +128,7 @@ export default async function HomePage() {
                   Digitize your store on Pepple Street, Otigba Street, or Medical Road. Receive verified shop badges, process online orders with escrow payment protection, and respond to corporate recruiters.
                 </p>
                 <Button size="lg" className="bg-white text-blue-900 hover:bg-blue-50 font-bold gap-2" asChild>
-                  <Link href="/register">
+                  <Link href="/register?role=VENDOR">
                     Register Your Shop <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
