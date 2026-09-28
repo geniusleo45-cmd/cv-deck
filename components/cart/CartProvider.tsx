@@ -88,8 +88,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const legacyCart = window.localStorage.getItem(legacyStorageKey);
       const browserItems = readCart(savedCart || legacyCart);
       refreshServerCart().then(async (serverItems) => {
-        if (!serverItems.length && browserItems.length) {
-          await Promise.all(browserItems.map((item) => fetch("/api/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ productId: item.productId, quantity: item.quantity }) })));
+        const serverQuantities = new Map(serverItems.map((item) => [item.productId, item.quantity]));
+        const additions = browserItems.flatMap((item) => {
+          const quantity = item.quantity - (serverQuantities.get(item.productId) || 0);
+          return quantity > 0 ? [{ productId: item.productId, quantity }] : [];
+        });
+        if (additions.length) {
+          await Promise.all(additions.map((item) => fetch("/api/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(item) })));
           await refreshServerCart();
         }
         if (legacyCart && !savedCart) window.localStorage.removeItem(legacyStorageKey);
