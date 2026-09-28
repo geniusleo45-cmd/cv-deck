@@ -17,7 +17,7 @@ export async function GET() {
             product: {
               include: {
                 vendor: {
-                  select: { businessName: true },
+                  select: { id: true, businessName: true },
                 },
               },
             },
