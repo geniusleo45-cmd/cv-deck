@@ -23,6 +23,7 @@ export default async function HomePage() {
   const [categories, featuredProducts, verifiedVendorsCount] = await Promise.all([
     prisma.category.findMany({ take: 6 }),
     prisma.product.findMany({
+      where: { status: "ACTIVE", vendor: { status: "VERIFIED" } },
       take: 6,
       include: { category: true, vendor: true },
       orderBy: { createdAt: "desc" },
