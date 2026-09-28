@@ -9,9 +9,10 @@ export default async function RecruiterDashboardPage() {
 
   const [vendors, recruiterProfile] = await Promise.all([
     prisma.vendor.findMany({
+      where: { status: "VERIFIED" },
       include: {
         user: { select: { name: true, email: true, phone: true } },
-        _count: { select: { products: true } },
+        _count: { select: { products: { where: { status: "ACTIVE" } } } },
       },
       orderBy: { rating: "desc" },
     }),
@@ -50,7 +51,7 @@ export default async function RecruiterDashboardPage() {
             <ShieldCheck className="h-4 w-4 text-purple-600" />
           </div>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {vendors.filter((v) => v.status === "VERIFIED").length}
+            {vendors.length}
           </p>
         </div>
 
@@ -105,7 +106,7 @@ export default async function RecruiterDashboardPage() {
               </div>
 
               <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 pt-2 border-t">
-                <span>{v._count.products} Products Listed</span>
+                <span>{v._count.products} Active Products</span>
                 <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs gap-1" asChild>
                   <Link href={`/dashboard/messages?receiverId=${v.userId}`}>
                     <MessageSquare className="h-3.5 w-3.5" /> Request Quote
