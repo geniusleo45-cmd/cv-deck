@@ -51,8 +51,11 @@ export async function POST(req: Request) {
     const { productId, quantity = 1 } = await req.json();
     const requestedQuantity = Number(quantity);
 
-    if (!productId || !Number.isInteger(requestedQuantity) || requestedQuantity === 0) {
+    if (!productId) {
       return NextResponse.json({ error: "Product ID is required" }, { status: 400 });
+    }
+    if (!Number.isInteger(requestedQuantity) || requestedQuantity === 0) {
+      return NextResponse.json({ error: "Quantity must be a non-zero whole number." }, { status: 400 });
     }
 
     const product = await prisma.product.findUnique({
