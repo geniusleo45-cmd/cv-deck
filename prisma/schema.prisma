@@ -78,6 +78,20 @@ enum VerificationStatus {
   REJECTED
 }
 
+enum AdPackage {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum AdCampaignStatus {
+  DRAFT
+  PENDING_PAYMENT
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
 model User {
   id        String   @id @default(cuid())
   name      String?
@@ -140,6 +154,7 @@ model Vendor {
   products      Product[]
   verifications VendorVerification[]
   reviews       Review[]
+  adCampaigns   AdCampaign[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -178,9 +193,31 @@ model Product {
   orderItems OrderItem[]
   cartItems  CartItem[]
   wishlistItems WishlistItem[]
+  adCampaigns   AdCampaign[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model AdCampaign {
+  id               String           @id @default(cuid())
+  vendorId         String
+  productId        String
+  package          AdPackage
+  status           AdCampaignStatus @default(DRAFT)
+  amount           Float
+  paymentProvider  String?
+  paymentReference String?          @unique
+  startsAt         DateTime?
+  endsAt           DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  vendor  Vendor  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, status])
+  @@index([productId, status])
 }
 
 model Cart {
