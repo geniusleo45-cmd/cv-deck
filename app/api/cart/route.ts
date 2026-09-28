@@ -49,14 +49,18 @@ export async function POST(req: Request) {
     }
 
     const { productId, quantity = 1 } = await req.json();
+    const requestedQuantity = Number(quantity);
 
-    if (!productId) {
+    if (!productId || !Number.isInteger(requestedQuantity) || requestedQuantity === 0) {
       return NextResponse.json({ error: "Product ID is required" }, { status: 400 });
     }
 
-    const product = await prisma.product.findUnique({ where: { id: productId } });
-    if (!product) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      include: { vendor: { select: { status: true } } },
+    });
+    if (!product || product.status !== "ACTIVE" || product.vendor.status !== "VERIFIED") {
+      return NextResponse.json({ error: "This product is not currently available." }, { status: 400 });
     }
 
     let cart = await prisma.cart.findUnique({
@@ -74,7 +78,10 @@ export async function POST(req: Request) {
     });
 
     if (existingItem) {
-      const newQuantity = existingItem.quantity + quantity;
+      const newQuantity = existingItem.quantity + requestedQuantity;
+      if (newQuantity > product.stock) {
+        return NextResponse.json({ error: `Only ${product.stock} unit${product.stock === 1 ? "" : "s"} are available.` }, { status: 400 });
+      }
       if (newQuantity <= 0) {
         await prisma.cartItem.delete({ where: { id: existingItem.id } });
       } else {
@@ -84,12 +91,15 @@ export async function POST(req: Request) {
         });
       }
     } else {
-      if (quantity > 0) {
+      if (requestedQuantity > 0) {
+        if (requestedQuantity > product.stock) {
+          return NextResponse.json({ error: `Only ${product.stock} unit${product.stock === 1 ? "" : "s"} are available.` }, { status: 400 });
+        }
         await prisma.cartItem.create({
           data: {
             cartId: cart.id,
             productId,
-            quantity,
+            quantity: requestedQuantity,
           },
         });
       }
