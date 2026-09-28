@@ -21,7 +21,7 @@ type CartContextValue = {
   addItem: (item: Omit<CartItem, "quantity">) => void;
   setQuantity: (productId: string, quantity: number) => void;
   removeItem: (productId: string) => void;
-  clearCart: () => void;
+  clearCart: () => Promise<void>;
 };
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
@@ -132,8 +132,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (current) void fetch("/api/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ productId, quantity: -current.quantity }) }).then(() => refreshServerCart()).catch(() => undefined);
       setItems((currentItems) => currentItems.filter((item) => item.productId !== productId));
     },
-    clearCart: () => { void fetch("/api/cart", { method: "DELETE" }).catch(() => undefined); setItems([]); },
-  }), [items, refreshServerCart]);
+    clearCart: async () => {
+      if (!session?.user?.id) {
+        setItems([]);
+        return;
+      }
+      const response = await fetch("/api/cart", { method: "DELETE" });
+      if (!response.ok) throw new Error("Unable to clear cart.");
+      setItems([]);
+    },
+  }), [items, refreshServerCart, session?.user?.id]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

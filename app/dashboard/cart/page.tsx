@@ -32,7 +32,7 @@ export default function CartPage() {
 
   const emptyCart = () => {
     if (!window.confirm("Remove every item from your cart?")) return;
-    clearCart();
+    void clearCart();
   };
 
   useEffect(() => {
@@ -91,7 +91,7 @@ export default function CartPage() {
         });
         const payment = await paymentResponse.json();
         if (!paymentResponse.ok) throw new Error(payment.error || `Order created, but ${paymentProvider === "PAYSTACK" ? "Paystack" : "Flutterwave"} checkout could not be opened.`);
-        clearCart();
+        await clearCart();
         window.location.assign(payment.authorizationUrl);
       }
     } catch (err) {
