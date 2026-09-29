@@ -1,0 +1,7 @@
+export const premiumPackages = {
+  DAILY: { label: "Daily", amount: 1000, durationDays: 1, description: "A one-day visibility boost for a timely offer." },
+  WEEKLY: { label: "Weekly", amount: 5000, durationDays: 7, description: "A full week of stronger marketplace visibility." },
+  MONTHLY: { label: "Monthly", amount: 15000, durationDays: 30, description: "The best value for ongoing promotion." },
+} as const;
+
+export type PremiumPackage = keyof typeof premiumPackages;

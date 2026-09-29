@@ -19,6 +19,7 @@ import {
   PlusCircle,
   Heart,
   LifeBuoy,
+  Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ export function DashboardSidebar() {
           { href: "/dashboard/vendor", label: "Vendor Dashboard", icon: LayoutDashboard },
           { href: "/dashboard/vendor/products", label: "My Inventory", icon: Package },
           { href: "/dashboard/vendor/orders", label: "Customer Orders", icon: ShoppingBag },
+          { href: "/dashboard/vendor/advertise", label: "Premium Listings", icon: Megaphone },
           { href: "/dashboard/vendor/verification", label: "Verification Status", icon: ShieldCheck },
           { href: "/dashboard/messages", label: "Messages & Inquiries", icon: MessageSquare },
           { href: "/dashboard/vendor/profile", label: "Business Profile", icon: User },
