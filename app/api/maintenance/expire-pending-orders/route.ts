@@ -28,5 +28,10 @@ export async function GET(request: Request) {
     if (released) expired += 1;
   }
 
-  return NextResponse.json({ expired });
+  const expiredPremiumListings = await prisma.adCampaign.updateMany({
+    where: { status: "ACTIVE", endsAt: { lte: new Date() } },
+    data: { status: "EXPIRED", authorizationUrl: null },
+  });
+
+  return NextResponse.json({ expired, expiredPremiumListings: expiredPremiumListings.count });
 }

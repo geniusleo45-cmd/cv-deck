@@ -208,6 +208,7 @@ model AdCampaign {
   amount           Float
   paymentProvider  String?
   paymentReference String?          @unique
+  authorizationUrl String?
   startsAt         DateTime?
   endsAt           DateTime?
   createdAt        DateTime         @default(now())

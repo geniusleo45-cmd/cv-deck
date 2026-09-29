@@ -5,13 +5,14 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart/CartProvider";
-import { ShoppingBag, ShieldCheck, MapPin, Star, CheckCircle, Heart } from "lucide-react";
+import { ShoppingBag, ShieldCheck, MapPin, Star, CheckCircle, Heart, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 interface ProductCardProps {
   compact?: boolean;
   mobileCompact?: boolean;
+  sponsored?: boolean;
   product: {
     id: string;
     name: string;
@@ -36,7 +37,7 @@ interface ProductCardProps {
   };
 }
 
-export function ProductCard({ product, compact = false, mobileCompact = false }: ProductCardProps) {
+export function ProductCard({ product, compact = false, mobileCompact = false, sponsored = false }: ProductCardProps) {
   const { addItem } = useCart();
   const router = useRouter();
   const [added, setAdded] = useState(false);
@@ -102,7 +103,7 @@ export function ProductCard({ product, compact = false, mobileCompact = false }:
   };
 
   return (
-    <div className={`group flex overflow-hidden rounded-2xl border bg-white shadow-sm transition-all duration-200 hover:shadow-lg dark:bg-gray-900 ${compact ? "flex-row" : mobileCompact ? "flex-row sm:flex-col" : "flex-col"}`}>
+    <div className={`group flex overflow-hidden rounded-2xl border bg-white shadow-sm transition-all duration-200 hover:shadow-lg dark:bg-gray-900 ${sponsored ? "border-amber-300 ring-1 ring-amber-100 dark:border-amber-700 dark:ring-amber-950" : ""} ${compact ? "flex-row" : mobileCompact ? "flex-row sm:flex-col" : "flex-col"}`}>
       {/* Product Image Header */}
       <div className={`relative shrink-0 overflow-hidden bg-gray-100 dark:bg-gray-800 ${compact ? "h-28 w-28 sm:h-32 sm:w-40" : mobileCompact ? "h-28 w-28 sm:aspect-[4/3] sm:h-auto sm:w-full" : "aspect-[4/3] w-full"}`}>
         <Image
@@ -122,6 +123,11 @@ export function ProductCard({ product, compact = false, mobileCompact = false }:
             </Badge>
           )}</span>}
         </div>
+        {sponsored && (
+          <Badge className={`absolute left-2 bottom-2 gap-1 bg-amber-400 px-2 py-0.5 text-[10px] font-bold text-amber-950 shadow-sm ${mobileCompact ? "sm:left-3 sm:bottom-3" : compact ? "" : "left-3 bottom-3"}`}>
+            <Sparkles className="h-3 w-3" /> Sponsored
+          </Badge>
+        )}
         <Button
           type="button"
           variant="secondary"

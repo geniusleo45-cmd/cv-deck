@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { activateVerifiedPremiumListing } from "@/lib/adCampaignNotifications";
 import { prisma } from "@/lib/prisma";
 import { notifyVendorsOfPaidOrder } from "@/lib/orderNotifications";
 
@@ -34,9 +35,15 @@ export async function POST(request: Request) {
     where: { reference, provider: "FLUTTERWAVE" },
     include: { order: { select: { status: true } } },
   });
+  const campaign = payment
+    ? null
+    : await prisma.adCampaign.findFirst({
+      where: { paymentReference: reference, paymentProvider: "FLUTTERWAVE" },
+      include: { vendor: { select: { userId: true } }, product: { select: { name: true } } },
+    });
 
   // Duplicate events or payments that do not belong to CV Deck are safe to ignore.
-  if (!payment || payment.status === "SUCCESS" || payment.order.status === "CANCELLED") {
+  if ((!payment && (!campaign || campaign.status !== "PENDING_PAYMENT")) || payment?.status === "SUCCESS" || payment?.order.status === "CANCELLED") {
     return NextResponse.json({ received: true });
   }
 
@@ -52,13 +59,19 @@ export async function POST(request: Request) {
   const isVerified = verificationResponse.ok
     && verification.status === "success"
     && verification.data?.status === "successful"
-    && verification.data?.tx_ref === payment.reference
+    && verification.data?.tx_ref === reference
     && verification.data?.currency === "NGN"
-    && verification.data?.amount >= payment.amount;
+    && verification.data?.amount >= (payment?.amount ?? campaign!.amount);
 
   if (!isVerified) {
     return NextResponse.json({ received: true });
   }
+
+  if (campaign) {
+    await activateVerifiedPremiumListing(campaign, "FLUTTERWAVE", reference);
+    return NextResponse.json({ received: true });
+  }
+  if (!payment) return NextResponse.json({ received: true });
 
   await prisma.$transaction([
     prisma.payment.update({

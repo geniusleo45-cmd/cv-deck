@@ -4,18 +4,28 @@ import { useState } from "react";
 
 type Product = { id: string; name: string; price: number };
 type PackageName = "DAILY" | "WEEKLY" | "MONTHLY";
+type ResumeCampaign = {
+  id: string;
+  productId: string;
+  package: PackageName;
+  paymentProvider: string | null;
+};
 const packages: { id: PackageName; title: string; price: number; duration: string; description: string }[] = [
   { id: "DAILY", title: "Daily", price: 1000, duration: "1 day", description: "A boost for flash offers and new stock." },
   { id: "WEEKLY", title: "Weekly", price: 5000, duration: "7 days", description: "Consistent visibility for a full week." },
   { id: "MONTHLY", title: "Monthly", price: 15000, duration: "30 days", description: "Best value for ongoing promotion." },
 ];
 
-export function PremiumListingForm({ products }: { products: Product[] }) {
-  const [productId, setProductId] = useState(products[0]?.id || "");
-  const [packageName, setPackageName] = useState<PackageName>("WEEKLY");
-  const [message, setMessage] = useState("");
+export function PremiumListingForm({ products, resumeCampaign }: { products: Product[]; resumeCampaign?: ResumeCampaign }) {
+  const [productId, setProductId] = useState(resumeCampaign?.productId || products[0]?.id || "");
+  const [packageName, setPackageName] = useState<PackageName>(resumeCampaign?.package || "WEEKLY");
+  const [campaignId, setCampaignId] = useState<string | null>(resumeCampaign?.id || null);
+  const [message, setMessage] = useState(resumeCampaign ? "Continue the existing Premium Listing with its secure checkout." : "");
   const [saving, setSaving] = useState(false);
+  const [paymentProvider, setPaymentProvider] = useState<"paystack" | "flutterwave" | null>(null);
+  const [checkoutProvider, setCheckoutProvider] = useState<"paystack" | "flutterwave" | null>(resumeCampaign?.paymentProvider === "PAYSTACK" ? "paystack" : resumeCampaign?.paymentProvider === "FLUTTERWAVE" ? "flutterwave" : null);
   const selected = packages.find((item) => item.id === packageName)!;
+  const lockedProvider = checkoutProvider;
 
   async function submit(event: React.FormEvent) {
     event.preventDefault(); setSaving(true); setMessage("");
@@ -23,10 +33,27 @@ export function PremiumListingForm({ products }: { products: Product[] }) {
       const response = await fetch("/api/ad-campaigns", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ productId, package: packageName }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to create Premium Listing.");
-      setMessage("Premium Listing created. Choose a payment method in the next step to activate it.");
+      setCampaignId(data.id);
+      setCheckoutProvider(data.paymentProvider === "PAYSTACK" ? "paystack" : data.paymentProvider === "FLUTTERWAVE" ? "flutterwave" : null);
+      setMessage("Premium Listing is ready. Choose its secure payment method to activate it.");
     } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to create Premium Listing."); }
     finally { setSaving(false); }
   }
 
-  return <form onSubmit={submit} className="space-y-6"><label className="block text-sm font-bold">Product to promote<select value={productId} onChange={(event) => setProductId(event.target.value)} className="mt-2 w-full rounded-xl border bg-white p-3 text-sm dark:bg-gray-900">{products.map((product) => <option key={product.id} value={product.id}>{product.name} · ₦{product.price.toLocaleString()}</option>)}</select></label><div className="grid gap-4 md:grid-cols-3">{packages.map((item) => <label key={item.id} className={`cursor-pointer rounded-2xl border p-5 transition ${packageName === item.id ? "border-blue-600 bg-blue-50 dark:border-blue-500 dark:bg-blue-950/30" : "bg-white dark:bg-gray-900"}`}><input type="radio" name="package" value={item.id} checked={packageName === item.id} onChange={() => setPackageName(item.id)} className="sr-only" /><p className="font-black">{item.title}</p><p className="mt-1 text-2xl font-black text-blue-600">₦{item.price.toLocaleString()}</p><p className="mt-1 text-xs font-bold text-gray-500">{item.duration}</p><p className="mt-3 text-xs text-gray-600 dark:text-gray-300">{item.description}</p></label>)}</div><div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-gray-50 p-4 dark:bg-gray-900"><p className="text-sm font-semibold">Selected: {selected.title} · ₦{selected.price.toLocaleString()}</p><button disabled={!productId || saving} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-60">{saving ? "Creating..." : "Continue to payment"}</button></div>{message && <p role="status" className="text-sm font-semibold text-blue-700 dark:text-blue-300">{message}</p>}</form>;
+  async function startPayment(provider: "paystack" | "flutterwave") {
+    if (!campaignId) return;
+    setPaymentProvider(provider);
+    setMessage("");
+    try {
+      const response = await fetch(`/api/ad-campaigns/${encodeURIComponent(campaignId)}/payments/${provider}/initialize`, { method: "POST" });
+      const data = await response.json();
+      if (!response.ok || !data.authorizationUrl) throw new Error(data.error || "Unable to start payment.");
+      window.location.assign(data.authorizationUrl);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to start payment.");
+      setPaymentProvider(null);
+    }
+  }
+
+  return <form onSubmit={submit} className="space-y-6"><label className="block text-sm font-bold">Product to promote<select value={productId} disabled={Boolean(campaignId)} onChange={(event) => setProductId(event.target.value)} className="mt-2 w-full rounded-xl border bg-white p-3 text-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-900">{products.map((product) => <option key={product.id} value={product.id}>{product.name} · ₦{product.price.toLocaleString()}</option>)}</select></label><div className="grid gap-4 md:grid-cols-3">{packages.map((item) => <label key={item.id} className={`cursor-pointer rounded-2xl border p-5 transition ${packageName === item.id ? "border-blue-600 bg-blue-50 dark:border-blue-500 dark:bg-blue-950/30" : "bg-white dark:bg-gray-900"} ${campaignId ? "cursor-not-allowed opacity-60" : ""}`}><input type="radio" name="package" value={item.id} disabled={Boolean(campaignId)} checked={packageName === item.id} onChange={() => setPackageName(item.id)} className="sr-only" /><p className="font-black">{item.title}</p><p className="mt-1 text-2xl font-black text-blue-600">₦{item.price.toLocaleString()}</p><p className="mt-1 text-xs font-bold text-gray-500">{item.duration}</p><p className="mt-3 text-xs text-gray-600 dark:text-gray-300">{item.description}</p></label>)}</div><div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-gray-50 p-4 dark:bg-gray-900"><p className="text-sm font-semibold">Selected: {selected.title} · ₦{selected.price.toLocaleString()}</p><button disabled={!productId || saving || Boolean(campaignId)} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-60">{saving ? "Creating..." : campaignId ? "Payment selection ready" : "Continue to payment"}</button></div>{campaignId && <div className="space-y-3 rounded-2xl border border-blue-200 bg-blue-50 p-5 dark:border-blue-900 dark:bg-blue-950/30"><div><p className="font-black text-gray-900 dark:text-white">{lockedProvider ? `Resume ${lockedProvider === "paystack" ? "Paystack" : "Flutterwave"} checkout` : "Choose your payment method"}</p><p className="mt-1 text-sm text-gray-600 dark:text-gray-300">Your listing will activate only after the payment provider confirms ₦{selected.price.toLocaleString()}.</p></div><div className="grid gap-3 sm:grid-cols-2">{(!lockedProvider || lockedProvider === "paystack") && <button type="button" onClick={() => startPayment("paystack")} disabled={Boolean(paymentProvider)} className="rounded-xl bg-teal-600 px-4 py-3 text-sm font-black text-white transition hover:bg-teal-700 disabled:opacity-60">{paymentProvider === "paystack" ? "Opening Paystack..." : lockedProvider ? "Resume Paystack" : "Pay with Paystack"}</button>}{(!lockedProvider || lockedProvider === "flutterwave") && <button type="button" onClick={() => startPayment("flutterwave")} disabled={Boolean(paymentProvider)} className="rounded-xl bg-orange-500 px-4 py-3 text-sm font-black text-white transition hover:bg-orange-600 disabled:opacity-60">{paymentProvider === "flutterwave" ? "Opening Flutterwave..." : lockedProvider ? "Resume Flutterwave" : "Pay with Flutterwave"}</button>}</div></div>}{message && <p role="status" className="text-sm font-semibold text-blue-700 dark:text-blue-300">{message}</p>}</form>;
 }

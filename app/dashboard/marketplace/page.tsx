@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ProductCard } from "@/components/marketplace/ProductCard";
 import { FilterSidebar } from "@/components/marketplace/FilterSidebar";
-import { Store, Loader2, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
+import { Store, Loader2, ChevronLeft, ChevronRight, ArrowUpDown, Sparkles } from "lucide-react";
 
 type Pagination = {
   total: number;
@@ -14,8 +14,10 @@ type Pagination = {
 
 export default function MarketplacePage() {
   const [products, setProducts] = useState<any[]>([]);
+  const [sponsoredProducts, setSponsoredProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sponsoredLoading, setSponsoredLoading] = useState(true);
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
@@ -87,6 +89,26 @@ export default function MarketplacePage() {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
+
+    async function fetchSponsoredProducts() {
+      try {
+        const res = await fetch("/api/products/sponsored", { signal: controller.signal });
+        if (!res.ok) return;
+        const data = await res.json();
+        setSponsoredProducts(data.products || []);
+      } catch (e: unknown) {
+        if ((e as Error).name !== "AbortError") console.error(e);
+      } finally {
+        if (!controller.signal.aborted) setSponsoredLoading(false);
+      }
+    }
+
+    fetchSponsoredProducts();
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
     const categoryId = new URLSearchParams(window.location.search).get("category");
     if (categoryId) setFilters((current) => current.categoryId === categoryId ? current : { ...current, categoryId });
   }, []);
@@ -137,6 +159,38 @@ export default function MarketplacePage() {
           {loading ? "Loading listings…" : `Showing ${firstListing}-${lastListing} of ${pagination.total} listings`}
         </span>
       </div>
+
+      {(sponsoredLoading || sponsoredProducts.length > 0) && (
+        <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/70 dark:bg-amber-950/20" aria-labelledby="sponsored-listings-heading">
+          <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                <Sparkles className="h-4 w-4" /> Sponsored
+              </p>
+              <h2 id="sponsored-listings-heading" className="mt-1 text-lg font-black text-gray-900 dark:text-white">
+                Featured marketplace listings
+              </h2>
+            </div>
+            <p className="text-xs text-gray-600 dark:text-gray-300">
+              Premium placements from verified Computer Village vendors.
+            </p>
+          </div>
+
+          {sponsoredLoading ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {[0, 1, 2].map((item) => (
+                <div key={item} className="h-44 animate-pulse rounded-xl bg-amber-100/80 dark:bg-amber-900/30" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {sponsoredProducts.map((product) => (
+                <ProductCard key={`sponsored-${product.id}`} product={product} mobileCompact sponsored />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Main Filter & Grid Layout */}
       <div className="flex flex-col lg:flex-row gap-6">
