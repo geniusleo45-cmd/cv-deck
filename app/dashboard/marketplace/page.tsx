@@ -185,7 +185,7 @@ export default function MarketplacePage() {
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {sponsoredProducts.map((product) => (
-                <ProductCard key={`sponsored-${product.id}`} product={product} mobileCompact sponsored />
+                <ProductCard key={`sponsored-${product.sponsoredCampaignId || product.id}`} product={product} mobileCompact sponsored sponsoredCampaignId={product.sponsoredCampaignId} />
               ))}
             </div>
           )}

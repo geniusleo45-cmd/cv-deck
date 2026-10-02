@@ -92,6 +92,11 @@ enum AdCampaignStatus {
   CANCELLED
 }
 
+enum AdEventType {
+  IMPRESSION
+  CLICK
+}
+
 model User {
   id        String   @id @default(cuid())
   name      String?
@@ -216,9 +221,24 @@ model AdCampaign {
 
   vendor  Vendor  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  events  AdCampaignEvent[]
 
   @@index([vendorId, status])
   @@index([productId, status])
+}
+
+model AdCampaignEvent {
+  id        String      @id @default(cuid())
+  campaignId String
+  type      AdEventType
+  visitorId String
+  day       DateTime
+  createdAt DateTime    @default(now())
+
+  campaign AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, type, visitorId, day])
+  @@index([campaignId, type])
 }
 
 model Cart {

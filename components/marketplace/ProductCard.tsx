@@ -6,13 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart/CartProvider";
 import { ShoppingBag, ShieldCheck, MapPin, Star, CheckCircle, Heart, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 interface ProductCardProps {
   compact?: boolean;
   mobileCompact?: boolean;
   sponsored?: boolean;
+  sponsoredCampaignId?: string;
   product: {
     id: string;
     name: string;
@@ -37,12 +38,37 @@ interface ProductCardProps {
   };
 }
 
-export function ProductCard({ product, compact = false, mobileCompact = false, sponsored = false }: ProductCardProps) {
+function trackSponsoredEvent(campaignId: string, type: "IMPRESSION" | "CLICK") {
+  void fetch(`/api/ad-campaigns/${encodeURIComponent(campaignId)}/events`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type }),
+    keepalive: type === "CLICK",
+  }).catch(() => undefined);
+}
+
+export function ProductCard({ product, compact = false, mobileCompact = false, sponsored = false, sponsoredCampaignId }: ProductCardProps) {
   const { addItem } = useCart();
   const router = useRouter();
+  const cardRef = useRef<HTMLDivElement>(null);
+  const hasTrackedImpression = useRef(false);
   const [added, setAdded] = useState(false);
   const [saved, setSaved] = useState((product.wishlistItems?.length ?? 0) > 0);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!sponsored || !sponsoredCampaignId || hasTrackedImpression.current) return;
+    const card = cardRef.current;
+    if (!card) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      hasTrackedImpression.current = true;
+      observer.disconnect();
+      trackSponsoredEvent(sponsoredCampaignId, "IMPRESSION");
+    }, { threshold: 0.5 });
+    observer.observe(card);
+    return () => observer.disconnect();
+  }, [sponsored, sponsoredCampaignId]);
 
   let imageUrl = "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=600&q=80";
   try {
@@ -102,8 +128,12 @@ export function ProductCard({ product, compact = false, mobileCompact = false, s
     }
   };
 
+  const handleSponsoredProductClick = () => {
+    if (sponsored && sponsoredCampaignId) trackSponsoredEvent(sponsoredCampaignId, "CLICK");
+  };
+
   return (
-    <div className={`group flex overflow-hidden rounded-2xl border bg-white shadow-sm transition-all duration-200 hover:shadow-lg dark:bg-gray-900 ${sponsored ? "border-amber-300 ring-1 ring-amber-100 dark:border-amber-700 dark:ring-amber-950" : ""} ${compact ? "flex-row" : mobileCompact ? "flex-row sm:flex-col" : "flex-col"}`}>
+    <div ref={cardRef} className={`group flex overflow-hidden rounded-2xl border bg-white shadow-sm transition-all duration-200 hover:shadow-lg dark:bg-gray-900 ${sponsored ? "border-amber-300 ring-1 ring-amber-100 dark:border-amber-700 dark:ring-amber-950" : ""} ${compact ? "flex-row" : mobileCompact ? "flex-row sm:flex-col" : "flex-col"}`}>
       {/* Product Image Header */}
       <div className={`relative shrink-0 overflow-hidden bg-gray-100 dark:bg-gray-800 ${compact ? "h-28 w-28 sm:h-32 sm:w-40" : mobileCompact ? "h-28 w-28 sm:aspect-[4/3] sm:h-auto sm:w-full" : "aspect-[4/3] w-full"}`}>
         <Image
@@ -152,7 +182,7 @@ export function ProductCard({ product, compact = false, mobileCompact = false, s
             </span>
           </div>
 
-          <Link href={`/dashboard/marketplace/${product.id}`}>
+          <Link href={`/dashboard/marketplace/${product.id}`} onClick={handleSponsoredProductClick}>
             <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base line-clamp-2 hover:text-blue-600 transition-colors">
               {product.name}
             </h3>

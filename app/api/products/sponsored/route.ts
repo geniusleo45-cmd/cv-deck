@@ -54,7 +54,7 @@ export async function GET() {
       .flatMap((campaign) => {
         if (seenProductIds.has(campaign.product.id)) return [];
         seenProductIds.add(campaign.product.id);
-        return [campaign.product];
+        return [{ ...campaign.product, sponsoredCampaignId: campaign.id }];
       })
       .slice(0, SPONSORED_PRODUCT_LIMIT);
 
