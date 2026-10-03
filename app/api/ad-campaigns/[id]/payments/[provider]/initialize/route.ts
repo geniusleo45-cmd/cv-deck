@@ -48,6 +48,19 @@ export async function POST(
     return NextResponse.json({ error: "The promoted product must remain active and in stock." }, { status: 409 });
   }
 
+  const now = new Date();
+  await prisma.adCampaign.updateMany({
+    where: { productId: campaign.product.id, status: "ACTIVE", endsAt: { lte: now } },
+    data: { status: "EXPIRED", authorizationUrl: null },
+  });
+  const existingActive = await prisma.adCampaign.findFirst({
+    where: { productId: campaign.product.id, status: "ACTIVE", endsAt: { gt: now } },
+    select: { id: true },
+  });
+  if (existingActive) {
+    return NextResponse.json({ error: "This product already has an active Premium Listing." }, { status: 409 });
+  }
+
   const providerName = provider.toUpperCase();
   if (campaign.paymentReference) {
     if (campaign.paymentProvider === providerName && campaign.authorizationUrl) {

@@ -87,10 +87,16 @@ export async function POST(
     return NextResponse.json({ error: "Payment was not completed." }, { status: 400 });
   }
 
-  const activated = await activateVerifiedPremiumListing(campaign, provider.toUpperCase() as "PAYSTACK" | "FLUTTERWAVE", reference);
+  const activation = await activateVerifiedPremiumListing(campaign, provider.toUpperCase() as "PAYSTACK" | "FLUTTERWAVE", reference);
   const activeCampaign = await prisma.adCampaign.findUnique({ where: { id: campaign.id } });
-  if (!activated && activeCampaign?.status !== "ACTIVE") {
+  if (activation === "product-already-promoted") {
+    return NextResponse.json({ error: "Your payment was confirmed, but another Premium Listing is already active for this product. Please contact CV Deck support so we can resolve the placement." }, { status: 409 });
+  }
+  if (activation === "ineligible") {
     return NextResponse.json({ error: "Your payment was confirmed, but the product is no longer active and in stock. Please contact CV Deck support before it can be promoted." }, { status: 409 });
   }
-  return NextResponse.json({ campaign: activeCampaign, alreadyActive: !activated });
+  if (activation !== "activated" && activeCampaign?.status !== "ACTIVE") {
+    return NextResponse.json({ error: "Your payment was confirmed, but the Premium Listing could not be finalized. Please contact CV Deck support." }, { status: 409 });
+  }
+  return NextResponse.json({ campaign: activeCampaign, alreadyActive: activation !== "activated" });
 }

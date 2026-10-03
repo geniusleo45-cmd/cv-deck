@@ -16,14 +16,20 @@ export async function POST(request: Request) {
   const product = await prisma.product.findFirst({ where: { id: input.productId, vendorId: vendor.id, status: "ACTIVE", stock: { gt: 0 } }, select: { id: true } });
   if (!product) return NextResponse.json({ error: "Choose one of your active, in-stock products." }, { status: 400 });
 
+  const now = new Date();
+  await prisma.adCampaign.updateMany({
+    where: { vendorId: vendor.id, productId: product.id, status: "ACTIVE", endsAt: { lte: now } },
+    data: { status: "EXPIRED", authorizationUrl: null },
+  });
+
   const existingActive = await prisma.adCampaign.findFirst({
-    where: { vendorId: vendor.id, productId: product.id, status: "ACTIVE", endsAt: { gt: new Date() } },
+    where: { vendorId: vendor.id, productId: product.id, status: "ACTIVE", endsAt: { gt: now } },
     orderBy: { endsAt: "desc" },
   });
   if (existingActive) return NextResponse.json({ error: "This product already has an active Premium Listing." }, { status: 409 });
 
   const pendingCampaign = await prisma.adCampaign.findFirst({
-    where: { vendorId: vendor.id, productId: product.id, package: packageName, status: "PENDING_PAYMENT" },
+    where: { vendorId: vendor.id, productId: product.id, status: "PENDING_PAYMENT" },
     orderBy: { createdAt: "desc" },
   });
   if (pendingCampaign) return NextResponse.json(pendingCampaign);
