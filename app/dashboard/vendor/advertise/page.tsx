@@ -55,16 +55,21 @@ export default async function AdvertisePage({
     metricsByCampaign.set(count.campaignId, metrics);
   }
 
-  const resumeCampaign = vendor?.adCampaigns.find((campaign) => (
-    campaign.id === campaignId
-    && campaign.status === "PENDING_PAYMENT"
-    && vendor.products.some((product) => product.id === campaign.productId)
-  ));
-  const renewalCampaign = vendor?.adCampaigns.find((campaign) => (
-    campaign.id === renewalCampaignId
-    && campaignStatusLabel(campaign.status, campaign.endsAt, now) === "EXPIRED"
-    && vendor.products.some((product) => product.id === campaign.productId)
-  ));
+  const requestedCampaignId = campaignId || renewalCampaignId;
+  const requestedCampaign = requestedCampaignId && vendor
+    ? await prisma.adCampaign.findFirst({
+      where: { id: requestedCampaignId, vendorId: vendor.id },
+      select: { id: true, productId: true, package: true, status: true, paymentProvider: true, endsAt: true, product: { select: { id: true, name: true } } },
+    })
+    : null;
+  const resumeCampaign = requestedCampaign && requestedCampaign.id === campaignId && (
+    requestedCampaign.status === "PENDING_PAYMENT"
+    && vendor?.products.some((product) => product.id === requestedCampaign.productId)
+  ) ? requestedCampaign : undefined;
+  const renewalCampaign = requestedCampaign && requestedCampaign.id === renewalCampaignId && (
+    campaignStatusLabel(requestedCampaign.status, requestedCampaign.endsAt, now) === "EXPIRED"
+    && vendor?.products.some((product) => product.id === requestedCampaign.productId)
+  ) ? requestedCampaign : undefined;
   const activeCampaigns = vendor?.adCampaigns.filter((campaign) => campaignStatusLabel(campaign.status, campaign.endsAt, now) === "ACTIVE") || [];
   const totalImpressions = [...metricsByCampaign.values()].reduce((sum, metrics) => sum + metrics.impressions, 0);
   const totalClicks = [...metricsByCampaign.values()].reduce((sum, metrics) => sum + metrics.clicks, 0);

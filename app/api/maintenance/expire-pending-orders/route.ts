@@ -28,10 +28,40 @@ export async function GET(request: Request) {
     if (released) expired += 1;
   }
 
-  const expiredPremiumListings = await prisma.adCampaign.updateMany({
-    where: { status: "ACTIVE", endsAt: { lte: new Date() } },
-    data: { status: "EXPIRED", authorizationUrl: null },
+  const now = new Date();
+  const expiredCampaigns = await prisma.adCampaign.findMany({
+    where: { status: "ACTIVE", endsAt: { lte: now } },
+    orderBy: { endsAt: "asc" },
+    take: 100,
+    select: {
+      id: true,
+      product: { select: { name: true } },
+      vendor: { select: { userId: true } },
+    },
   });
 
-  return NextResponse.json({ expired, expiredPremiumListings: expiredPremiumListings.count });
+  let expiredPremiumListings = 0;
+  for (const campaign of expiredCampaigns) {
+    const expiredCampaign = await prisma.$transaction(async (tx) => {
+      const update = await tx.adCampaign.updateMany({
+        where: { id: campaign.id, status: "ACTIVE", endsAt: { lte: now } },
+        data: { status: "EXPIRED", authorizationUrl: null },
+      });
+      if (update.count !== 1) return false;
+
+      await tx.notification.create({
+        data: {
+          userId: campaign.vendor.userId,
+          type: "SYSTEM",
+          title: "Premium Listing ended",
+          message: `${campaign.product.name} is no longer featured. Renew it to continue reaching marketplace shoppers.`,
+          link: `/dashboard/vendor/advertise?renew=${encodeURIComponent(campaign.id)}`,
+        },
+      });
+      return true;
+    });
+    if (expiredCampaign) expiredPremiumListings += 1;
+  }
+
+  return NextResponse.json({ expired, expiredPremiumListings });
 }
