@@ -95,6 +95,7 @@ enum AdCampaignStatus {
 enum AdEventType {
   IMPRESSION
   CLICK
+  ADD_TO_CART
 }
 
 model User {

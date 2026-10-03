@@ -1,0 +1,1 @@
+ALTER TYPE "AdEventType" ADD VALUE 'ADD_TO_CART';

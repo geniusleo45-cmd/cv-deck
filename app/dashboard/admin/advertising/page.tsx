@@ -5,7 +5,7 @@ import { requireAdmin } from "@/lib/rbac";
 
 const campaignStatuses = ["DRAFT", "PENDING_PAYMENT", "ACTIVE", "EXPIRED", "CANCELLED"] as const;
 type CampaignStatus = (typeof campaignStatuses)[number];
-type CampaignMetrics = { impressions: number; clicks: number };
+type CampaignMetrics = { impressions: number; clicks: number; cartAdds: number };
 
 function effectiveStatus(status: CampaignStatus, endsAt: Date | null, now: Date) {
   return status === "ACTIVE" && endsAt && endsAt <= now ? "EXPIRED" : status;
@@ -88,9 +88,10 @@ export default async function AdminAdvertisingPage({
     : [];
   const metricsByCampaign = new Map<string, CampaignMetrics>();
   for (const event of eventCounts) {
-    const metrics = metricsByCampaign.get(event.campaignId) || { impressions: 0, clicks: 0 };
+    const metrics = metricsByCampaign.get(event.campaignId) || { impressions: 0, clicks: 0, cartAdds: 0 };
     if (event.type === "IMPRESSION") metrics.impressions = event._count.id;
     if (event.type === "CLICK") metrics.clicks = event._count.id;
+    if (event.type === "ADD_TO_CART") metrics.cartAdds = event._count.id;
     metricsByCampaign.set(event.campaignId, metrics);
   }
 
@@ -146,7 +147,7 @@ export default async function AdminAdvertisingPage({
           <tbody>
             {campaigns.map((campaign) => {
               const status = effectiveStatus(campaign.status, campaign.endsAt, now);
-              const metrics = metricsByCampaign.get(campaign.id) || { impressions: 0, clicks: 0 };
+              const metrics = metricsByCampaign.get(campaign.id) || { impressions: 0, clicks: 0, cartAdds: 0 };
               const live = status === "ACTIVE" && campaign.startsAt && campaign.startsAt <= now && campaign.endsAt && campaign.endsAt > now;
               return (
                 <tr key={campaign.id} className="border-b align-top last:border-0">
@@ -154,7 +155,7 @@ export default async function AdminAdvertisingPage({
                   <td className="py-4 pr-4"><Link href={`/vendors/${campaign.vendor.id}`} className="font-semibold text-gray-900 hover:text-blue-600 hover:underline dark:text-white">{campaign.vendor.businessName}</Link><p className="mt-1 text-xs text-gray-500">{campaign.vendor.user.name || campaign.vendor.user.email}</p><p className={`mt-1 text-[10px] font-bold ${campaign.vendor.status === "VERIFIED" ? "text-emerald-600" : "text-amber-600"}`}>{campaign.vendor.status}</p></td>
                   <td className="py-4 pr-4"><p className="font-bold">{statusLabel(campaign.package)}</p><p className="mt-1 text-xs font-semibold text-emerald-600">₦{campaign.amount.toLocaleString()}</p><p className="mt-1 text-xs text-gray-500">{providerLabel(campaign.paymentProvider)}</p></td>
                   <td className="py-4 pr-4"><p className="font-semibold">{campaign.startsAt ? `${formatDate(campaign.startsAt)} → ${formatDate(campaign.endsAt)}` : "Starts after payment"}</p><p className={`mt-1 text-xs font-bold ${live ? "text-emerald-600" : "text-gray-500"}`}>{live ? "Live now" : `Created ${formatDate(campaign.createdAt)}`}</p></td>
-                  <td className="py-4 pr-4"><p className="font-bold">{metrics.impressions.toLocaleString()} <span className="font-normal text-gray-500">impressions</span></p><p className="mt-1 text-xs font-semibold text-gray-600 dark:text-gray-300">{metrics.clicks.toLocaleString()} clicks · {ctr(metrics.clicks, metrics.impressions)} CTR</p></td>
+                  <td className="py-4 pr-4"><p className="font-bold">{metrics.impressions.toLocaleString()} <span className="font-normal text-gray-500">impressions</span></p><p className="mt-1 text-xs font-semibold text-gray-600 dark:text-gray-300">{metrics.clicks.toLocaleString()} clicks · {metrics.cartAdds.toLocaleString()} cart adds · {ctr(metrics.clicks, metrics.impressions)} CTR</p></td>
                   <td className="pr-4 pt-4"><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${statusClass(status)}`}>{statusLabel(status)}</span></td>
                 </tr>
               );

@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 const VISITOR_COOKIE = "cvdeck_ad_visitor";
-const EVENT_TYPES = new Set(["IMPRESSION", "CLICK"]);
+const EVENT_TYPES = new Set(["IMPRESSION", "CLICK", "ADD_TO_CART"]);
 
 function utcDay(date: Date) {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
@@ -23,7 +23,7 @@ export async function POST(
   if (typeof input?.type !== "string" || !EVENT_TYPES.has(input.type)) {
     return NextResponse.json({ error: "Invalid campaign event." }, { status: 400 });
   }
-  const eventType = input.type as "IMPRESSION" | "CLICK";
+  const eventType = input.type as "IMPRESSION" | "CLICK" | "ADD_TO_CART";
 
   const { id } = await params;
   const now = new Date();

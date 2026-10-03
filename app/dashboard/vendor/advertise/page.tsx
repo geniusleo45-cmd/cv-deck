@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { BarChart3, Megaphone, MousePointerClick, Sparkles } from "lucide-react";
+import { BarChart3, Megaphone, MousePointerClick, ShoppingBag, Sparkles } from "lucide-react";
 import { getCurrentUser } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { PremiumListingForm } from "./PremiumListingForm";
 
-type CampaignMetrics = { impressions: number; clicks: number };
+type CampaignMetrics = { impressions: number; clicks: number; cartAdds: number };
 
 function campaignStatusLabel(status: string, endsAt: Date | null, now: Date) {
   if (status === "ACTIVE" && endsAt && endsAt <= now) return "EXPIRED";
@@ -49,9 +49,10 @@ export default async function AdvertisePage({
     : [];
   const metricsByCampaign = new Map<string, CampaignMetrics>();
   for (const count of eventCounts) {
-    const metrics = metricsByCampaign.get(count.campaignId) || { impressions: 0, clicks: 0 };
+    const metrics = metricsByCampaign.get(count.campaignId) || { impressions: 0, clicks: 0, cartAdds: 0 };
     if (count.type === "IMPRESSION") metrics.impressions = count._count.id;
     if (count.type === "CLICK") metrics.clicks = count._count.id;
+    if (count.type === "ADD_TO_CART") metrics.cartAdds = count._count.id;
     metricsByCampaign.set(count.campaignId, metrics);
   }
 
@@ -73,6 +74,7 @@ export default async function AdvertisePage({
   const activeCampaigns = vendor?.adCampaigns.filter((campaign) => campaignStatusLabel(campaign.status, campaign.endsAt, now) === "ACTIVE") || [];
   const totalImpressions = [...metricsByCampaign.values()].reduce((sum, metrics) => sum + metrics.impressions, 0);
   const totalClicks = [...metricsByCampaign.values()].reduce((sum, metrics) => sum + metrics.clicks, 0);
+  const totalCartAdds = [...metricsByCampaign.values()].reduce((sum, metrics) => sum + metrics.cartAdds, 0);
 
   return (
     <section className="mx-auto max-w-4xl space-y-6">
@@ -87,10 +89,11 @@ export default async function AdvertisePage({
         <>
           {vendor.adCampaigns.length > 0 && (
             <>
-              <section className="grid gap-3 sm:grid-cols-3">
+              <section className="grid gap-3 sm:grid-cols-4">
                 <div className="rounded-2xl border bg-white p-4 dark:bg-gray-900"><Sparkles className="h-4 w-4 text-amber-500" /><p className="mt-3 text-2xl font-black">{activeCampaigns.length}</p><p className="text-xs text-gray-500">Active listings</p></div>
                 <div className="rounded-2xl border bg-white p-4 dark:bg-gray-900"><BarChart3 className="h-4 w-4 text-blue-600" /><p className="mt-3 text-2xl font-black">{totalImpressions.toLocaleString()}</p><p className="text-xs text-gray-500">Unique daily impressions</p></div>
                 <div className="rounded-2xl border bg-white p-4 dark:bg-gray-900"><MousePointerClick className="h-4 w-4 text-emerald-600" /><p className="mt-3 text-2xl font-black">{totalClicks.toLocaleString()}</p><p className="text-xs text-gray-500">Product detail clicks</p></div>
+                <div className="rounded-2xl border bg-white p-4 dark:bg-gray-900"><ShoppingBag className="h-4 w-4 text-violet-600" /><p className="mt-3 text-2xl font-black">{totalCartAdds.toLocaleString()}</p><p className="text-xs text-gray-500">Sponsored card cart adds</p></div>
               </section>
 
               <section className="space-y-3 rounded-2xl border bg-white p-5 dark:bg-gray-900">
@@ -103,9 +106,9 @@ export default async function AdvertisePage({
                     const status = campaignStatusLabel(campaign.status, campaign.endsAt, now);
                     const providerName = campaign.paymentProvider === "PAYSTACK" ? "Paystack" : campaign.paymentProvider === "FLUTTERWAVE" ? "Flutterwave" : null;
                     const statusClass = status === "ACTIVE" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" : status === "PENDING_PAYMENT" ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
-                    const metrics = metricsByCampaign.get(campaign.id) || { impressions: 0, clicks: 0 };
+                    const metrics = metricsByCampaign.get(campaign.id) || { impressions: 0, clicks: 0, cartAdds: 0 };
                     const canRenew = status === "EXPIRED" && vendor.products.some((product) => product.id === campaign.productId);
-                    return <article key={campaign.id} className="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="truncate font-bold text-gray-900 dark:text-white">{campaign.product.name}</p><span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${statusClass}`}>{status.replace("_", " ")}</span></div><p className="mt-1 text-xs text-gray-500">{campaign.package.toLowerCase()} placement · ₦{campaign.amount.toLocaleString()} {status === "ACTIVE" && campaign.endsAt ? `· ends ${campaign.endsAt.toLocaleDateString("en-NG", { dateStyle: "medium" })}` : ""}</p>{status !== "PENDING_PAYMENT" && <p className="mt-2 text-xs font-semibold text-gray-600 dark:text-gray-300">{metrics.impressions.toLocaleString()} impressions · {metrics.clicks.toLocaleString()} detail clicks · {percentage(metrics.clicks, metrics.impressions)} CTR</p>}</div>{status === "PENDING_PAYMENT" && (campaign.authorizationUrl ? <a href={campaign.authorizationUrl} className="inline-flex shrink-0 items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700">Resume {providerName || "payment"}</a> : <Link href={`/dashboard/vendor/advertise?campaign=${encodeURIComponent(campaign.id)}`} className="inline-flex shrink-0 items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700">Choose payment</Link>)}{["ACTIVE", "EXPIRED"].includes(status) && <><Link href={`/dashboard/vendor/advertise/${campaign.id}/report`} className="inline-flex shrink-0 items-center justify-center rounded-lg border border-blue-200 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-300 dark:hover:bg-blue-950/30">View performance</Link><Link href={`/dashboard/vendor/advertise/${campaign.id}/receipt`} className="inline-flex shrink-0 items-center justify-center rounded-lg border px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800">View receipt</Link></>}{canRenew && <Link href={`/dashboard/vendor/advertise?renew=${encodeURIComponent(campaign.id)}`} className="inline-flex shrink-0 items-center justify-center rounded-lg border border-blue-200 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-300 dark:hover:bg-blue-950/30">Renew listing</Link>}</article>;
+                    return <article key={campaign.id} className="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="truncate font-bold text-gray-900 dark:text-white">{campaign.product.name}</p><span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${statusClass}`}>{status.replace("_", " ")}</span></div><p className="mt-1 text-xs text-gray-500">{campaign.package.toLowerCase()} placement · ₦{campaign.amount.toLocaleString()} {status === "ACTIVE" && campaign.endsAt ? `· ends ${campaign.endsAt.toLocaleDateString("en-NG", { dateStyle: "medium" })}` : ""}</p>{status !== "PENDING_PAYMENT" && <p className="mt-2 text-xs font-semibold text-gray-600 dark:text-gray-300">{metrics.impressions.toLocaleString()} impressions · {metrics.clicks.toLocaleString()} detail clicks · {metrics.cartAdds.toLocaleString()} cart adds · {percentage(metrics.clicks, metrics.impressions)} CTR</p>}</div>{status === "PENDING_PAYMENT" && (campaign.authorizationUrl ? <a href={campaign.authorizationUrl} className="inline-flex shrink-0 items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700">Resume {providerName || "payment"}</a> : <Link href={`/dashboard/vendor/advertise?campaign=${encodeURIComponent(campaign.id)}`} className="inline-flex shrink-0 items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700">Choose payment</Link>)}{["ACTIVE", "EXPIRED"].includes(status) && <><Link href={`/dashboard/vendor/advertise/${campaign.id}/report`} className="inline-flex shrink-0 items-center justify-center rounded-lg border border-blue-200 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-300 dark:hover:bg-blue-950/30">View performance</Link><Link href={`/dashboard/vendor/advertise/${campaign.id}/receipt`} className="inline-flex shrink-0 items-center justify-center rounded-lg border px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800">View receipt</Link></>}{canRenew && <Link href={`/dashboard/vendor/advertise?renew=${encodeURIComponent(campaign.id)}`} className="inline-flex shrink-0 items-center justify-center rounded-lg border border-blue-200 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-300 dark:hover:bg-blue-950/30">Renew listing</Link>}</article>;
                   })}
                 </div>
               </section>

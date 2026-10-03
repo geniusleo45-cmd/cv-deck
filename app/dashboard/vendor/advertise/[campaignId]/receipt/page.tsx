@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, BarChart3, CalendarDays, CheckCircle2, CreditCard, Megaphone, MousePointerClick } from "lucide-react";
+import { ArrowLeft, BarChart3, CalendarDays, CheckCircle2, CreditCard, Megaphone, MousePointerClick, ShoppingBag } from "lucide-react";
 import { getCurrentUser } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { premiumPackages, type PremiumPackage } from "@/lib/premiumListings";
@@ -52,6 +52,7 @@ export default async function PremiumListingReceiptPage({
   });
   const impressions = eventCounts.find((event) => event.type === "IMPRESSION")?._count.id || 0;
   const clicks = eventCounts.find((event) => event.type === "CLICK")?._count.id || 0;
+  const cartAdds = eventCounts.find((event) => event.type === "ADD_TO_CART")?._count.id || 0;
   const packageDetails = premiumPackages[campaign.package as PremiumPackage];
   const campaignCode = campaign.id.slice(-8).toUpperCase();
   const statusLabel = campaign.status === "ACTIVE" ? "Live and paid" : "Completed and paid";
@@ -99,8 +100,8 @@ export default async function PremiumListingReceiptPage({
 
         <div className="rounded-xl border p-4">
           <p className="mb-4 flex items-center gap-2 text-sm font-bold"><BarChart3 className="h-4 w-4 text-blue-600" /> Campaign performance</p>
-          <div className="grid gap-3 sm:grid-cols-3"><div><p className="text-2xl font-black">{impressions.toLocaleString()}</p><p className="text-xs text-gray-500">Unique daily impressions</p></div><div><p className="text-2xl font-black">{clicks.toLocaleString()}</p><p className="text-xs text-gray-500">Product detail clicks</p></div><div><p className="flex items-center gap-1 text-2xl font-black"><MousePointerClick className="h-5 w-5 text-emerald-600" /> {impressions ? `${((clicks / impressions) * 100).toFixed(1)}%` : "—"}</p><p className="text-xs text-gray-500">Click-through rate</p></div></div>
-          <p className="mt-4 text-xs text-gray-500">Performance records one impression and one click per browser each day for this campaign.</p>
+          <div className="grid gap-3 sm:grid-cols-4"><div><p className="text-2xl font-black">{impressions.toLocaleString()}</p><p className="text-xs text-gray-500">Unique daily impressions</p></div><div><p className="text-2xl font-black">{clicks.toLocaleString()}</p><p className="text-xs text-gray-500">Product detail clicks</p></div><div><p className="flex items-center gap-1 text-2xl font-black"><ShoppingBag className="h-5 w-5 text-violet-600" /> {cartAdds.toLocaleString()}</p><p className="text-xs text-gray-500">Sponsored card cart adds</p></div><div><p className="flex items-center gap-1 text-2xl font-black"><MousePointerClick className="h-5 w-5 text-emerald-600" /> {impressions ? `${((clicks / impressions) * 100).toFixed(1)}%` : "—"}</p><p className="text-xs text-gray-500">Click-through rate</p></div></div>
+          <p className="mt-4 text-xs text-gray-500">Performance records one impression, detail click, and sponsored-card cart add per browser each day for this campaign.</p>
         </div>
 
         <footer className="border-t pt-5 text-xs text-gray-500">CV Deck Marketplace · {campaign.vendor.businessName}{campaign.vendor.officeAddress ? ` · ${campaign.vendor.officeAddress}` : ""}{campaign.vendor.phone ? ` · ${campaign.vendor.phone}` : ""}</footer>

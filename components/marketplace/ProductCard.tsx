@@ -38,7 +38,7 @@ interface ProductCardProps {
   };
 }
 
-function trackSponsoredEvent(campaignId: string, type: "IMPRESSION" | "CLICK") {
+function trackSponsoredEvent(campaignId: string, type: "IMPRESSION" | "CLICK" | "ADD_TO_CART") {
   void fetch(`/api/ad-campaigns/${encodeURIComponent(campaignId)}/events`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -103,6 +103,7 @@ export function ProductCard({ product, compact = false, mobileCompact = false, s
       vendorId: product.vendor.id,
       vendorName: product.vendor.businessName,
     });
+    if (sponsored && sponsoredCampaignId) trackSponsoredEvent(sponsoredCampaignId, "ADD_TO_CART");
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1600);
   };
