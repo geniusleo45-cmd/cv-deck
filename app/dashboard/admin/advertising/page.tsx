@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { BarChart3, Clock3, Megaphone, MousePointerClick, Sparkles } from "lucide-react";
+import { BarChart3, CircleDollarSign, Clock3, Megaphone, MousePointerClick, Sparkles } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
 
 const campaignStatuses = ["DRAFT", "PENDING_PAYMENT", "ACTIVE", "EXPIRED", "CANCELLED"] as const;
 type CampaignStatus = (typeof campaignStatuses)[number];
-type CampaignMetrics = { impressions: number; clicks: number; cartAdds: number };
+type CampaignMetrics = { impressions: number; clicks: number; cartAdds: number; paidUnits: number; attributedValue: number };
 
 function effectiveStatus(status: CampaignStatus, endsAt: Date | null, now: Date) {
   return status === "ACTIVE" && endsAt && endsAt <= now ? "EXPIRED" : status;
@@ -37,6 +37,14 @@ function ctr(clicks: number, impressions: number) {
   return impressions ? `${((clicks / impressions) * 100).toFixed(1)}%` : "—";
 }
 
+function formatNaira(amount: number) {
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
 export default async function AdminAdvertisingPage({
   searchParams,
 }: {
@@ -50,7 +58,7 @@ export default async function AdminAdvertisingPage({
   const now = new Date();
   const campaignWhere = selectedStatus === "ALL" ? {} : { status: selectedStatus };
 
-  const [paidCampaigns, livePromotions, pendingPayments, campaigns] = await Promise.all([
+  const [paidCampaigns, livePromotions, pendingPayments, campaigns, verifiedAttributedUnits] = await Promise.all([
     prisma.adCampaign.aggregate({
       where: { status: { in: ["ACTIVE", "EXPIRED"] } },
       _sum: { amount: true },
@@ -76,23 +84,50 @@ export default async function AdminAdvertisingPage({
         },
       },
     }),
+    prisma.orderItem.aggregate({
+      where: {
+        adCampaignId: { not: null },
+        attributedQuantity: { gt: 0 },
+        order: { payment: { is: { status: "SUCCESS", verifiedAt: { not: null } } } },
+      },
+      _sum: { attributedQuantity: true },
+    }),
   ]);
 
   const campaignIds = campaigns.map((campaign) => campaign.id);
-  const eventCounts = campaignIds.length
-    ? await prisma.adCampaignEvent.groupBy({
-      by: ["campaignId", "type"],
-      where: { campaignId: { in: campaignIds } },
-      _count: { id: true },
-    })
-    : [];
+  const [eventCounts, attributedOrderItems] = campaignIds.length
+    ? await Promise.all([
+      prisma.adCampaignEvent.groupBy({
+        by: ["campaignId", "type"],
+        where: { campaignId: { in: campaignIds } },
+        _count: { id: true },
+      }),
+      prisma.orderItem.groupBy({
+        by: ["adCampaignId", "price"],
+        where: {
+          adCampaignId: { in: campaignIds },
+          attributedQuantity: { gt: 0 },
+          order: { payment: { is: { status: "SUCCESS", verifiedAt: { not: null } } } },
+        },
+        _sum: { attributedQuantity: true },
+      }),
+    ])
+    : [[], []];
   const metricsByCampaign = new Map<string, CampaignMetrics>();
   for (const event of eventCounts) {
-    const metrics = metricsByCampaign.get(event.campaignId) || { impressions: 0, clicks: 0, cartAdds: 0 };
+    const metrics = metricsByCampaign.get(event.campaignId) || { impressions: 0, clicks: 0, cartAdds: 0, paidUnits: 0, attributedValue: 0 };
     if (event.type === "IMPRESSION") metrics.impressions = event._count.id;
     if (event.type === "CLICK") metrics.clicks = event._count.id;
     if (event.type === "ADD_TO_CART") metrics.cartAdds = event._count.id;
     metricsByCampaign.set(event.campaignId, metrics);
+  }
+  for (const item of attributedOrderItems) {
+    if (!item.adCampaignId) continue;
+    const metrics = metricsByCampaign.get(item.adCampaignId) || { impressions: 0, clicks: 0, cartAdds: 0, paidUnits: 0, attributedValue: 0 };
+    const attributedQuantity = item._sum.attributedQuantity || 0;
+    metrics.paidUnits += attributedQuantity;
+    metrics.attributedValue += item.price * attributedQuantity;
+    metricsByCampaign.set(item.adCampaignId, metrics);
   }
 
   const filterHref = (nextStatus: CampaignStatus | "ALL") => {
@@ -106,6 +141,7 @@ export default async function AdminAdvertisingPage({
     { label: "Premium listing revenue", value: `₦${(paidCampaigns._sum.amount || 0).toLocaleString()}`, detail: `${paidCampaigns._count.id} paid campaign${paidCampaigns._count.id === 1 ? "" : "s"}`, icon: Megaphone, tone: "text-amber-600" },
     { label: "Live promotions", value: livePromotions.toLocaleString(), detail: "Currently eligible for featured placement", icon: Sparkles, tone: "text-emerald-600" },
     { label: "Pending payment", value: pendingPayments.toLocaleString(), detail: "Awaiting vendor checkout", icon: Clock3, tone: "text-blue-600" },
+    { label: "Verified attributed units", value: (verifiedAttributedUnits._sum.attributedQuantity || 0).toLocaleString(), detail: "All-time paid sponsored-cart units", icon: CircleDollarSign, tone: "text-emerald-600" },
     { label: "Campaigns shown", value: campaigns.length.toLocaleString(), detail: selectedStatus === "ALL" ? "Most recent 100 campaigns" : `${statusLabel(selectedStatus)} campaigns`, icon: BarChart3, tone: "text-violet-600" },
   ];
 
@@ -119,7 +155,7 @@ export default async function AdminAdvertisingPage({
         <span className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"><Sparkles className="h-4 w-4" /> Read-only operations view</span>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {cards.map(({ label, value, detail, icon: Icon, tone }) => (
           <div key={label} className="rounded-2xl border bg-white p-5 dark:bg-gray-900">
             <div className="flex items-center justify-between text-sm text-gray-500"><span>{label}</span><Icon className={`h-4 w-4 ${tone}`} /></div>
@@ -140,14 +176,14 @@ export default async function AdminAdvertisingPage({
       <div className="overflow-x-auto rounded-2xl border bg-white dark:bg-gray-900">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b p-5">
           <div><h2 className="font-bold">Promotion activity</h2><p className="mt-1 text-xs text-gray-500">Active and expired campaigns are paid placements. An overdue active campaign is displayed as expired until the hourly maintenance task updates it.</p></div>
-          <span className="inline-flex items-center gap-1 text-xs font-semibold text-gray-500"><MousePointerClick className="h-3.5 w-3.5" /> One daily event per browser</span>
+          <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-gray-500"><span className="inline-flex items-center gap-1"><MousePointerClick className="h-3.5 w-3.5" /> One daily event per browser</span><span className="inline-flex items-center gap-1"><CircleDollarSign className="h-3.5 w-3.5 text-emerald-600" /> Verified sponsored-cart sales only</span></div>
         </div>
-        <table className="w-full min-w-[980px] text-left text-sm">
-          <thead><tr className="border-b text-xs text-gray-500"><th className="p-4">Product</th><th>Vendor</th><th>Package & payment</th><th>Placement window</th><th>Engagement</th><th className="pr-4">Status</th></tr></thead>
+        <table className="w-full min-w-[1080px] text-left text-sm">
+          <thead><tr className="border-b text-xs text-gray-500"><th className="p-4">Product</th><th>Vendor</th><th>Package & payment</th><th>Placement window</th><th>Engagement & paid sales</th><th className="pr-4">Status</th></tr></thead>
           <tbody>
             {campaigns.map((campaign) => {
               const status = effectiveStatus(campaign.status, campaign.endsAt, now);
-              const metrics = metricsByCampaign.get(campaign.id) || { impressions: 0, clicks: 0, cartAdds: 0 };
+              const metrics = metricsByCampaign.get(campaign.id) || { impressions: 0, clicks: 0, cartAdds: 0, paidUnits: 0, attributedValue: 0 };
               const live = status === "ACTIVE" && campaign.startsAt && campaign.startsAt <= now && campaign.endsAt && campaign.endsAt > now;
               return (
                 <tr key={campaign.id} className="border-b align-top last:border-0">
@@ -155,7 +191,7 @@ export default async function AdminAdvertisingPage({
                   <td className="py-4 pr-4"><Link href={`/vendors/${campaign.vendor.id}`} className="font-semibold text-gray-900 hover:text-blue-600 hover:underline dark:text-white">{campaign.vendor.businessName}</Link><p className="mt-1 text-xs text-gray-500">{campaign.vendor.user.name || campaign.vendor.user.email}</p><p className={`mt-1 text-[10px] font-bold ${campaign.vendor.status === "VERIFIED" ? "text-emerald-600" : "text-amber-600"}`}>{campaign.vendor.status}</p></td>
                   <td className="py-4 pr-4"><p className="font-bold">{statusLabel(campaign.package)}</p><p className="mt-1 text-xs font-semibold text-emerald-600">₦{campaign.amount.toLocaleString()}</p><p className="mt-1 text-xs text-gray-500">{providerLabel(campaign.paymentProvider)}</p></td>
                   <td className="py-4 pr-4"><p className="font-semibold">{campaign.startsAt ? `${formatDate(campaign.startsAt)} → ${formatDate(campaign.endsAt)}` : "Starts after payment"}</p><p className={`mt-1 text-xs font-bold ${live ? "text-emerald-600" : "text-gray-500"}`}>{live ? "Live now" : `Created ${formatDate(campaign.createdAt)}`}</p></td>
-                  <td className="py-4 pr-4"><p className="font-bold">{metrics.impressions.toLocaleString()} <span className="font-normal text-gray-500">impressions</span></p><p className="mt-1 text-xs font-semibold text-gray-600 dark:text-gray-300">{metrics.clicks.toLocaleString()} clicks · {metrics.cartAdds.toLocaleString()} cart adds · {ctr(metrics.clicks, metrics.impressions)} CTR</p></td>
+                  <td className="py-4 pr-4"><p className="font-bold">{metrics.impressions.toLocaleString()} <span className="font-normal text-gray-500">impressions</span></p><p className="mt-1 text-xs font-semibold text-gray-600 dark:text-gray-300">{metrics.clicks.toLocaleString()} clicks · {metrics.cartAdds.toLocaleString()} cart adds · {ctr(metrics.clicks, metrics.impressions)} CTR</p><p className="mt-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">{metrics.paidUnits.toLocaleString()} verified paid unit{metrics.paidUnits === 1 ? "" : "s"} · {formatNaira(metrics.attributedValue)}</p></td>
                   <td className="pr-4 pt-4"><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${statusClass(status)}`}>{statusLabel(status)}</span></td>
                 </tr>
               );
