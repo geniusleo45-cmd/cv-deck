@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, BarChart3, CalendarDays, CircleDollarSign, MousePointerClick, ReceiptText, ShoppingBag, Sparkles } from "lucide-react";
+import { ArrowLeft, BarChart3, CalendarDays, CircleDollarSign, MousePointerClick, ReceiptText, ShoppingBag, Sparkles, TrendingUp } from "lucide-react";
 import { getCurrentUser } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 
@@ -66,7 +66,7 @@ export default async function CampaignReportPage({
   const startDay = requestedStartDay > campaignStartDay ? requestedStartDay : campaignStartDay;
   const salesEndExclusive = new Date(today);
   salesEndExclusive.setUTCDate(salesEndExclusive.getUTCDate() + 1);
-  const [lifetimeCounts, dailyCounts, paidOrderItems] = await Promise.all([
+  const [lifetimeCounts, dailyCounts, paidOrderItems, allTimePaidOrderItems] = await Promise.all([
     prisma.adCampaignEvent.groupBy({ by: ["type"], where: { campaignId: campaign.id }, _count: { id: true } }),
     prisma.adCampaignEvent.groupBy({
       by: ["day", "type"],
@@ -74,7 +74,8 @@ export default async function CampaignReportPage({
       _count: { id: true },
       orderBy: { day: "asc" },
     }),
-    prisma.orderItem.findMany({
+    prisma.orderItem.groupBy({
+      by: ["price"],
       where: {
         adCampaignId: campaign.id,
         attributedQuantity: { gt: 0 },
@@ -87,7 +88,23 @@ export default async function CampaignReportPage({
           },
         },
       },
-      select: { attributedQuantity: true, price: true },
+      _sum: { attributedQuantity: true },
+    }),
+    prisma.orderItem.groupBy({
+      by: ["price"],
+      where: {
+        adCampaignId: campaign.id,
+        attributedQuantity: { gt: 0 },
+        order: {
+          payment: {
+            is: {
+              status: "SUCCESS",
+              verifiedAt: { not: null },
+            },
+          },
+        },
+      },
+      _sum: { attributedQuantity: true },
     }),
   ]);
 
@@ -110,8 +127,12 @@ export default async function CampaignReportPage({
   const periodImpressions = dailyRows.reduce((sum, row) => sum + row.impressions, 0);
   const periodClicks = dailyRows.reduce((sum, row) => sum + row.clicks, 0);
   const periodCartAdds = dailyRows.reduce((sum, row) => sum + row.cartAdds, 0);
-  const periodPaidUnits = paidOrderItems.reduce((sum, item) => sum + item.attributedQuantity, 0);
-  const periodAttributedRevenue = paidOrderItems.reduce((sum, item) => sum + item.price * item.attributedQuantity, 0);
+  const periodPaidUnits = paidOrderItems.reduce((sum, item) => sum + (item._sum.attributedQuantity || 0), 0);
+  const periodAttributedRevenue = paidOrderItems.reduce((sum, item) => sum + item.price * (item._sum.attributedQuantity || 0), 0);
+  const allTimePaidUnits = allTimePaidOrderItems.reduce((sum, item) => sum + (item._sum.attributedQuantity || 0), 0);
+  const allTimeAttributedRevenue = allTimePaidOrderItems.reduce((sum, item) => sum + item.price * (item._sum.attributedQuantity || 0), 0);
+  const salesToCost = campaign.amount > 0 ? allTimeAttributedRevenue / campaign.amount : null;
+  const costPerPaidUnit = allTimePaidUnits > 0 ? campaign.amount / allTimePaidUnits : null;
   const maxDailyImpressions = Math.max(...dailyRows.map((row) => row.impressions), 1);
   const filterHref = (nextRange: Range) => `/dashboard/vendor/advertise/${campaign.id}/report${nextRange === "7" ? "" : `?range=${nextRange}`}`;
 
@@ -137,6 +158,11 @@ export default async function CampaignReportPage({
       <section className="rounded-2xl border bg-white p-5 dark:bg-gray-900">
         <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="flex items-center gap-2 font-black"><CircleDollarSign className="h-5 w-5 text-emerald-600" /> Attributed paid sales</h2><p className="mt-1 max-w-2xl text-sm text-gray-500">Only products that were added from this sponsored card and later received a verified payment are credited here. Organic and product-detail-page purchases are not included.</p></div><p className="text-xs font-semibold text-gray-500">{ranges[range].label}</p></div>
         <div className="mt-5 grid gap-4 sm:grid-cols-2"><div className="rounded-xl bg-gray-50 p-4 dark:bg-gray-800"><p className="text-2xl font-black">{periodPaidUnits.toLocaleString()}</p><p className="text-xs text-gray-500">Verified paid units</p></div><div className="rounded-xl bg-emerald-50 p-4 dark:bg-emerald-950/40"><p className="text-2xl font-black text-emerald-700 dark:text-emerald-300">{formatNaira(periodAttributedRevenue)}</p><p className="text-xs text-emerald-800 dark:text-emerald-200">Attributed merchandise value</p></div></div>
+      </section>
+
+      <section className="rounded-2xl border bg-white p-5 dark:bg-gray-900">
+        <div><h2 className="flex items-center gap-2 font-black"><TrendingUp className="h-5 w-5 text-blue-600" /> Campaign efficiency</h2><p className="mt-1 max-w-2xl text-sm text-gray-500">All-time to date: placement cost compared with verified attributed merchandise value. This is not profit and does not include delivery costs, returns, margins, or organic sales.</p></div>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><div className="rounded-xl bg-gray-50 p-4 dark:bg-gray-800"><p className="text-2xl font-black">{formatNaira(campaign.amount)}</p><p className="text-xs text-gray-500">Placement cost</p></div><div className="rounded-xl bg-emerald-50 p-4 dark:bg-emerald-950/40"><p className="text-2xl font-black text-emerald-700 dark:text-emerald-300">{formatNaira(allTimeAttributedRevenue)}</p><p className="text-xs text-emerald-800 dark:text-emerald-200">Attributed value to date</p></div><div className="rounded-xl bg-blue-50 p-4 dark:bg-blue-950/40"><p className="text-2xl font-black text-blue-700 dark:text-blue-300">{salesToCost === null ? "—" : `${salesToCost.toFixed(2)}x`}</p><p className="text-xs text-blue-800 dark:text-blue-200">Sales-to-cost ratio</p></div><div className="rounded-xl bg-violet-50 p-4 dark:bg-violet-950/40"><p className="text-2xl font-black text-violet-700 dark:text-violet-300">{costPerPaidUnit === null ? "—" : formatNaira(costPerPaidUnit)}</p><p className="text-xs text-violet-800 dark:text-violet-200">Cost per verified paid unit</p></div></div>
       </section>
 
       <section className="rounded-2xl border bg-white p-5 dark:bg-gray-900">
