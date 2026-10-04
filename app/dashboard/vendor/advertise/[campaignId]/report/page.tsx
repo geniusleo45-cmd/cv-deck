@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, BarChart3, CalendarDays, MousePointerClick, ReceiptText, ShoppingBag, Sparkles } from "lucide-react";
+import { ArrowLeft, BarChart3, CalendarDays, CircleDollarSign, MousePointerClick, ReceiptText, ShoppingBag, Sparkles } from "lucide-react";
 import { getCurrentUser } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 
@@ -26,6 +26,14 @@ function formatDay(day: Date) {
 
 function ctr(clicks: number, impressions: number) {
   return impressions ? `${((clicks / impressions) * 100).toFixed(1)}%` : "—";
+}
+
+function formatNaira(amount: number) {
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    maximumFractionDigits: 0,
+  }).format(amount);
 }
 
 export default async function CampaignReportPage({
@@ -56,13 +64,30 @@ export default async function CampaignReportPage({
     ? new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - (ranges[range].days - 1)))
     : campaignStartDay;
   const startDay = requestedStartDay > campaignStartDay ? requestedStartDay : campaignStartDay;
-  const [lifetimeCounts, dailyCounts] = await Promise.all([
+  const salesEndExclusive = new Date(today);
+  salesEndExclusive.setUTCDate(salesEndExclusive.getUTCDate() + 1);
+  const [lifetimeCounts, dailyCounts, paidOrderItems] = await Promise.all([
     prisma.adCampaignEvent.groupBy({ by: ["type"], where: { campaignId: campaign.id }, _count: { id: true } }),
     prisma.adCampaignEvent.groupBy({
       by: ["day", "type"],
       where: { campaignId: campaign.id, day: { gte: startDay, lte: campaignEndDay } },
       _count: { id: true },
       orderBy: { day: "asc" },
+    }),
+    prisma.orderItem.findMany({
+      where: {
+        adCampaignId: campaign.id,
+        attributedQuantity: { gt: 0 },
+        order: {
+          payment: {
+            is: {
+              status: "SUCCESS",
+              verifiedAt: { gte: startDay, lt: salesEndExclusive },
+            },
+          },
+        },
+      },
+      select: { attributedQuantity: true, price: true },
     }),
   ]);
 
@@ -85,6 +110,8 @@ export default async function CampaignReportPage({
   const periodImpressions = dailyRows.reduce((sum, row) => sum + row.impressions, 0);
   const periodClicks = dailyRows.reduce((sum, row) => sum + row.clicks, 0);
   const periodCartAdds = dailyRows.reduce((sum, row) => sum + row.cartAdds, 0);
+  const periodPaidUnits = paidOrderItems.reduce((sum, item) => sum + item.attributedQuantity, 0);
+  const periodAttributedRevenue = paidOrderItems.reduce((sum, item) => sum + item.price * item.attributedQuantity, 0);
   const maxDailyImpressions = Math.max(...dailyRows.map((row) => row.impressions), 1);
   const filterHref = (nextRange: Range) => `/dashboard/vendor/advertise/${campaign.id}/report${nextRange === "7" ? "" : `?range=${nextRange}`}`;
 
@@ -106,6 +133,11 @@ export default async function CampaignReportPage({
         <div className="rounded-2xl border bg-white p-5 dark:bg-gray-900"><BarChart3 className="h-4 w-4 text-blue-600" /><p className="mt-3 text-2xl font-black">{ctr(periodClicks, periodImpressions)}</p><p className="text-xs text-gray-500">Period click-through rate</p></div>
         <div className="rounded-2xl border bg-white p-5 dark:bg-gray-900"><CalendarDays className="h-4 w-4 text-violet-600" /><p className="mt-3 text-2xl font-black">{isLive ? "Live" : "Complete"}</p><p className="text-xs text-gray-500">{campaign.endsAt ? `${isLive ? "Ends" : "Ended"} ${campaign.endsAt.toLocaleDateString("en-NG", { dateStyle: "medium" })}` : "Placement window unavailable"}</p></div>
       </div>
+
+      <section className="rounded-2xl border bg-white p-5 dark:bg-gray-900">
+        <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="flex items-center gap-2 font-black"><CircleDollarSign className="h-5 w-5 text-emerald-600" /> Attributed paid sales</h2><p className="mt-1 max-w-2xl text-sm text-gray-500">Only products that were added from this sponsored card and later received a verified payment are credited here. Organic and product-detail-page purchases are not included.</p></div><p className="text-xs font-semibold text-gray-500">{ranges[range].label}</p></div>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2"><div className="rounded-xl bg-gray-50 p-4 dark:bg-gray-800"><p className="text-2xl font-black">{periodPaidUnits.toLocaleString()}</p><p className="text-xs text-gray-500">Verified paid units</p></div><div className="rounded-xl bg-emerald-50 p-4 dark:bg-emerald-950/40"><p className="text-2xl font-black text-emerald-700 dark:text-emerald-300">{formatNaira(periodAttributedRevenue)}</p><p className="text-xs text-emerald-800 dark:text-emerald-200">Attributed merchandise value</p></div></div>
+      </section>
 
       <section className="rounded-2xl border bg-white p-5 dark:bg-gray-900">
         <div className="flex flex-wrap items-center justify-between gap-2"><div><h2 className="font-black">Daily marketplace activity</h2><p className="mt-1 text-sm text-gray-500">Each bar shows unique sponsored-listing impressions for one UTC day.</p></div><p className="text-xs font-semibold text-gray-500">All-time: {lifetimeImpressions.toLocaleString()} impressions · {lifetimeClicks.toLocaleString()} clicks · {lifetimeCartAdds.toLocaleString()} cart adds · {ctr(lifetimeClicks, lifetimeImpressions)} CTR</p></div>

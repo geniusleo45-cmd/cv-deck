@@ -19,7 +19,17 @@ export async function POST(req: Request) {
     const validated = requestSchema.parse(body);
     const quantities = new Map<string, number>();
     for (const item of validated.items) quantities.set(item.productId, (quantities.get(item.productId) || 0) + item.quantity);
-    const products = await prisma.product.findMany({ where: { id: { in: [...quantities.keys()] }, status: "ACTIVE" }, include: { vendor: { select: { userId: true } } } });
+    const [products, cart] = await Promise.all([
+      prisma.product.findMany({ where: { id: { in: [...quantities.keys()] }, status: "ACTIVE" }, include: { vendor: { select: { userId: true } } } }),
+      prisma.cart.findUnique({
+        where: { userId: sessionUser.id },
+        select: {
+          items: {
+            select: { productId: true, quantity: true, adCampaignId: true, attributedQuantity: true },
+          },
+        },
+      }),
+    ]);
     if (products.length !== quantities.size) {
       return NextResponse.json({ error: "One or more products are unavailable." }, { status: 400 });
     }
@@ -34,6 +44,7 @@ export async function POST(req: Request) {
     }
 
     const totalAmount = products.reduce((acc, product) => acc + product.price * (quantities.get(product.id) || 0), 0);
+    const cartItemsByProductId = new Map((cart?.items || []).map((item) => [item.productId, item]));
 
     const orderNumber = `CVD-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;
 
@@ -46,11 +57,21 @@ export async function POST(req: Request) {
         shippingAddress: validated.shippingAddress,
         status: "PENDING",
         items: {
-          create: products.map((product) => ({
-            productId: product.id,
-            quantity: quantities.get(product.id) || 0,
-            price: product.price,
-          })),
+          create: products.map((product) => {
+            const quantity = quantities.get(product.id) || 0;
+            const cartItem = cartItemsByProductId.get(product.id);
+            const attributedQuantity = cartItem?.adCampaignId
+              ? Math.min(quantity, cartItem.quantity, Math.max(cartItem.attributedQuantity, 0))
+              : 0;
+
+            return {
+              productId: product.id,
+              quantity,
+              price: product.price,
+              adCampaignId: attributedQuantity > 0 ? cartItem?.adCampaignId : undefined,
+              attributedQuantity,
+            };
+          }),
         },
       },
       include: {

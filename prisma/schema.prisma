@@ -223,6 +223,8 @@ model AdCampaign {
   vendor  Vendor  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   events  AdCampaignEvent[]
+  cartItems CartItem[]
+  orderItems OrderItem[]
 
   @@index([vendorId, status])
   @@index([productId, status])
@@ -254,13 +256,18 @@ model Cart {
 }
 
 model CartItem {
-  id        String @id @default(cuid())
-  cartId    String
-  productId String
-  quantity  Int    @default(1)
+  id                 String @id @default(cuid())
+  cartId             String
+  productId          String
+  quantity           Int    @default(1)
+  adCampaignId       String?
+  attributedQuantity Int    @default(0)
 
-  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cart       Cart        @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  adCampaign AdCampaign? @relation(fields: [adCampaignId], references: [id], onDelete: SetNull)
+
+  @@index([adCampaignId])
 }
 
 model WishlistItem {
@@ -295,14 +302,19 @@ model Order {
 }
 
 model OrderItem {
-  id        String @id @default(cuid())
-  orderId   String
-  productId String
-  quantity  Int
-  price     Float
+  id                 String @id @default(cuid())
+  orderId            String
+  productId          String
+  quantity           Int
+  price              Float
+  adCampaignId       String?
+  attributedQuantity Int    @default(0)
 
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
+  order      Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product    Product     @relation(fields: [productId], references: [id])
+  adCampaign AdCampaign? @relation(fields: [adCampaignId], references: [id], onDelete: SetNull)
+
+  @@index([adCampaignId])
 }
 
 model Payment {

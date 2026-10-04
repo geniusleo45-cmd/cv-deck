@@ -12,13 +12,17 @@ export type CartItem = {
   image?: string;
   vendorId?: string;
   vendorName?: string;
+  adCampaignId?: string;
+  attributedQuantity: number;
 };
+
+type NewCartItem = Omit<CartItem, "quantity" | "attributedQuantity">;
 
 type CartContextValue = {
   items: CartItem[];
   itemCount: number;
   total: number;
-  addItem: (item: Omit<CartItem, "quantity">) => void;
+  addItem: (item: NewCartItem) => void;
   setQuantity: (productId: string, quantity: number) => void;
   removeItem: (productId: string) => void;
   clearCart: () => Promise<void>;
@@ -50,7 +54,14 @@ function readCart(rawCart: string | null): CartItem[] {
       : Math.max(1, Math.floor(item.quantity));
     const quantity = Math.min(Math.max(1, Math.floor(item.quantity)), maxQuantity);
 
-    return [{ productId: item.productId, name: item.name, price: item.price, quantity, maxQuantity, image: typeof item.image === "string" ? item.image : undefined, vendorId: typeof item.vendorId === "string" ? item.vendorId : undefined, vendorName: typeof item.vendorName === "string" ? item.vendorName : undefined }];
+    const attributedQuantity = typeof item.attributedQuantity === "number" && Number.isFinite(item.attributedQuantity)
+      ? Math.min(quantity, Math.max(0, Math.floor(item.attributedQuantity)))
+      : 0;
+    const adCampaignId = attributedQuantity > 0 && typeof item.adCampaignId === "string"
+      ? item.adCampaignId
+      : undefined;
+
+    return [{ productId: item.productId, name: item.name, price: item.price, quantity, maxQuantity, image: typeof item.image === "string" ? item.image : undefined, vendorId: typeof item.vendorId === "string" ? item.vendorId : undefined, vendorName: typeof item.vendorName === "string" ? item.vendorName : undefined, adCampaignId, attributedQuantity }];
   });
 }
 
@@ -60,7 +71,11 @@ function mapServerCart(data: any): CartItem[] {
     if (!product || product.stock <= 0 || product.status !== "ACTIVE") return [];
     let image: string | undefined;
     try { image = JSON.parse(product.images)[0]; } catch {}
-    return [{ productId: product.id, name: product.name, price: product.price, quantity: Math.min(item.quantity, product.stock), maxQuantity: product.stock, image, vendorId: product.vendor?.id, vendorName: product.vendor?.businessName }];
+    const quantity = Math.min(item.quantity, product.stock);
+    const attributedQuantity = typeof item.attributedQuantity === "number"
+      ? Math.min(quantity, Math.max(0, Math.floor(item.attributedQuantity)))
+      : 0;
+    return [{ productId: product.id, name: product.name, price: product.price, quantity, maxQuantity: product.stock, image, vendorId: product.vendor?.id, vendorName: product.vendor?.businessName, adCampaignId: attributedQuantity > 0 && typeof item.adCampaignId === "string" ? item.adCampaignId : undefined, attributedQuantity }];
   });
 }
 
@@ -88,10 +103,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const legacyCart = window.localStorage.getItem(legacyStorageKey);
       const browserItems = readCart(savedCart || legacyCart);
       refreshServerCart().then(async (serverItems) => {
-        const serverQuantities = new Map(serverItems.map((item) => [item.productId, item.quantity]));
+        const serverItemsByProductId = new Map(serverItems.map((item) => [item.productId, item]));
         const additions = browserItems.flatMap((item) => {
-          const quantity = item.quantity - (serverQuantities.get(item.productId) || 0);
-          return quantity > 0 ? [{ productId: item.productId, quantity }] : [];
+          const serverItem = serverItemsByProductId.get(item.productId);
+          const quantity = item.quantity - (serverItem?.quantity || 0);
+          if (quantity <= 0) return [];
+
+          const attributedQuantity = item.adCampaignId
+            ? Math.min(quantity, Math.max(0, item.attributedQuantity - (serverItem?.attributedQuantity || 0)))
+            : 0;
+          return [
+            ...(attributedQuantity > 0 ? [{ productId: item.productId, quantity: attributedQuantity, campaignId: item.adCampaignId }] : []),
+            ...(quantity > attributedQuantity ? [{ productId: item.productId, quantity: quantity - attributedQuantity }] : []),
+          ];
         });
         if (additions.length) {
           await Promise.all(additions.map((item) => fetch("/api/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(item) })));
@@ -115,12 +139,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     items,
     itemCount: items.reduce((count, item) => count + item.quantity, 0),
     total: items.reduce((sum, item) => sum + item.price * item.quantity, 0),
-    addItem: (newItem: Omit<CartItem, "quantity">) => {
-      void fetch("/api/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ productId: newItem.productId, quantity: 1 }) }).then(() => refreshServerCart()).catch(() => undefined);
+    addItem: (newItem: NewCartItem) => {
+      void fetch("/api/cart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ productId: newItem.productId, quantity: 1, campaignId: newItem.adCampaignId }) }).then(() => refreshServerCart()).catch(() => undefined);
       setItems((currentItems) => {
       const existingItem = currentItems.find((item) => item.productId === newItem.productId);
-      if (!existingItem) return [...currentItems, { ...newItem, quantity: 1 }];
-      return currentItems.map((item) => item.productId === newItem.productId ? { ...item, quantity: Math.min(item.quantity + 1, item.maxQuantity) } : item);
+      if (!existingItem) return [...currentItems, { ...newItem, quantity: 1, attributedQuantity: newItem.adCampaignId ? 1 : 0 }];
+      const quantity = Math.min(existingItem.quantity + 1, existingItem.maxQuantity);
+      const canExtendCampaignAttribution = Boolean(newItem.adCampaignId && (!existingItem.adCampaignId || existingItem.adCampaignId === newItem.adCampaignId));
+      return currentItems.map((item) => item.productId === newItem.productId ? {
+        ...item,
+        quantity,
+        adCampaignId: canExtendCampaignAttribution ? newItem.adCampaignId : item.adCampaignId,
+        attributedQuantity: canExtendCampaignAttribution
+          ? Math.min(quantity, item.attributedQuantity + 1)
+          : Math.min(item.attributedQuantity, quantity),
+      } : item);
       });
     },
     setQuantity: (productId: string, quantity: number) => {
@@ -129,7 +162,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setItems((currentItems) => currentItems.flatMap((item) => {
       if (item.productId !== productId) return [item];
       if (quantity <= 0) return [];
-      return [{ ...item, quantity: Math.min(quantity, item.maxQuantity) }];
+      const nextQuantity = Math.min(quantity, item.maxQuantity);
+      return [{ ...item, quantity: nextQuantity, attributedQuantity: Math.min(item.attributedQuantity, nextQuantity) }];
       }));
     },
     removeItem: (productId: string) => {

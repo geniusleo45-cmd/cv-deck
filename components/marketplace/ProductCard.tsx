@@ -38,13 +38,20 @@ interface ProductCardProps {
   };
 }
 
-function trackSponsoredEvent(campaignId: string, type: "IMPRESSION" | "CLICK" | "ADD_TO_CART") {
-  void fetch(`/api/ad-campaigns/${encodeURIComponent(campaignId)}/events`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type }),
-    keepalive: type === "CLICK",
-  }).catch(() => undefined);
+async function trackSponsoredEvent(campaignId: string, type: "IMPRESSION" | "CLICK" | "ADD_TO_CART") {
+  try {
+    const response = await fetch(`/api/ad-campaigns/${encodeURIComponent(campaignId)}/events`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type }),
+      keepalive: type === "CLICK",
+    });
+    if (!response.ok) return false;
+    const result = await response.json().catch(() => null) as { recorded?: unknown } | null;
+    return result?.recorded === true;
+  } catch {
+    return false;
+  }
 }
 
 export function ProductCard({ product, compact = false, mobileCompact = false, sponsored = false, sponsoredCampaignId }: ProductCardProps) {
@@ -53,6 +60,7 @@ export function ProductCard({ product, compact = false, mobileCompact = false, s
   const cardRef = useRef<HTMLDivElement>(null);
   const hasTrackedImpression = useRef(false);
   const [added, setAdded] = useState(false);
+  const [adding, setAdding] = useState(false);
   const [saved, setSaved] = useState((product.wishlistItems?.length ?? 0) > 0);
   const [saving, setSaving] = useState(false);
 
@@ -64,7 +72,7 @@ export function ProductCard({ product, compact = false, mobileCompact = false, s
       if (!entry.isIntersecting) return;
       hasTrackedImpression.current = true;
       observer.disconnect();
-      trackSponsoredEvent(sponsoredCampaignId, "IMPRESSION");
+      void trackSponsoredEvent(sponsoredCampaignId, "IMPRESSION");
     }, { threshold: 0.5 });
     observer.observe(card);
     return () => observer.disconnect();
@@ -89,23 +97,33 @@ export function ProductCard({ product, compact = false, mobileCompact = false, s
     }
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (added) {
       router.push("/dashboard/cart");
       return;
     }
-    addItem({
-      productId: product.id,
-      name: product.name,
-      price: product.price,
-      maxQuantity: product.stock,
-      image: imageUrl,
-      vendorId: product.vendor.id,
-      vendorName: product.vendor.businessName,
-    });
-    if (sponsored && sponsoredCampaignId) trackSponsoredEvent(sponsoredCampaignId, "ADD_TO_CART");
-    setAdded(true);
-    window.setTimeout(() => setAdded(false), 1600);
+    if (adding) return;
+
+    setAdding(true);
+    try {
+      const campaignId = sponsored && sponsoredCampaignId && await trackSponsoredEvent(sponsoredCampaignId, "ADD_TO_CART")
+        ? sponsoredCampaignId
+        : undefined;
+      addItem({
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        maxQuantity: product.stock,
+        image: imageUrl,
+        vendorId: product.vendor.id,
+        vendorName: product.vendor.businessName,
+        adCampaignId: campaignId,
+      });
+      setAdded(true);
+      window.setTimeout(() => setAdded(false), 1600);
+    } finally {
+      setAdding(false);
+    }
   };
 
   const handleSave = async () => {
@@ -130,7 +148,7 @@ export function ProductCard({ product, compact = false, mobileCompact = false, s
   };
 
   const handleSponsoredProductClick = () => {
-    if (sponsored && sponsoredCampaignId) trackSponsoredEvent(sponsoredCampaignId, "CLICK");
+    if (sponsored && sponsoredCampaignId) void trackSponsoredEvent(sponsoredCampaignId, "CLICK");
   };
 
   return (
@@ -221,12 +239,12 @@ export function ProductCard({ product, compact = false, mobileCompact = false, s
 
           <Button
             size="sm"
-            disabled={product.stock <= 0 || added}
+            disabled={product.stock <= 0 || added || adding}
             onClick={handleAddToCart}
             className={`font-bold gap-1.5 shadow-sm text-white ${added ? "bg-emerald-600 hover:bg-emerald-700" : "bg-blue-600 hover:bg-blue-700"}`}
           >
             {added ? <CheckCircle className="h-4 w-4" /> : <ShoppingBag className="h-4 w-4" />}
-            {product.stock <= 0 ? "Sold Out" : added ? "View cart" : "Add"}
+            {product.stock <= 0 ? "Sold Out" : added ? "View cart" : adding ? "Adding…" : "Add"}
           </Button>
         </div>
       </div>
