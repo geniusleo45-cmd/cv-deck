@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { notifyVendorsOfPaidOrder } from "@/lib/orderNotifications";
+import { completeVerifiedOrderPayment } from "@/lib/orderNotifications";
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
@@ -17,7 +17,8 @@ export async function GET(request: Request) {
   const result = await response.json();
   const isPaid = response.ok && result.status === true && result.data?.status === "success" && result.data?.reference === reference && result.data?.currency === "NGN" && result.data?.amount >= Math.round(payment.amount * 100);
   if (!isPaid) { if (result.data?.status === "failed") await prisma.payment.update({ where: { id: payment.id }, data: { status: "FAILED" } }); return NextResponse.json({ error: "Payment was not completed." }, { status: 400 }); }
-  await prisma.$transaction([prisma.payment.update({ where: { id: payment.id }, data: { status: "SUCCESS", verifiedAt: new Date() } }), prisma.order.update({ where: { id: payment.orderId }, data: { status: "PROCESSING" } })]);
-  await notifyVendorsOfPaidOrder(payment.orderId);
+  const finalization = await completeVerifiedOrderPayment(payment.id);
+  if (finalization === "cancelled") return NextResponse.json({ error: "This order has been cancelled." }, { status: 409 });
+  if (finalization === "missing") return NextResponse.json({ error: "Payment not found." }, { status: 404 });
   return NextResponse.json({ orderId: payment.orderId });
 }

@@ -217,6 +217,7 @@ model AdCampaign {
   authorizationUrl String?
   startsAt         DateTime?
   endsAt           DateTime?
+  firstAttributedSaleNotifiedAt DateTime?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 

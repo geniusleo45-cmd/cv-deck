@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { activateVerifiedPremiumListing } from "@/lib/adCampaignNotifications";
 import { prisma } from "@/lib/prisma";
+import { completeVerifiedOrderPayment } from "@/lib/orderNotifications";
 
 type PaystackWebhook = { event?: string; data?: { reference?: string } };
 
@@ -41,6 +42,6 @@ export async function POST(request: Request) {
   const result = await response.json();
   const isPaid = response.ok && result.status === true && result.data?.status === "success" && result.data?.reference === reference && result.data?.currency === "NGN" && result.data?.amount >= Math.round(payment.amount * 100);
   if (!isPaid) return NextResponse.json({ received: true });
-  await prisma.$transaction([prisma.payment.update({ where: { id: payment.id }, data: { status: "SUCCESS", verifiedAt: new Date() } }), prisma.order.update({ where: { id: payment.orderId }, data: { status: "PROCESSING" } })]);
+  await completeVerifiedOrderPayment(payment.id);
   return NextResponse.json({ received: true });
 }

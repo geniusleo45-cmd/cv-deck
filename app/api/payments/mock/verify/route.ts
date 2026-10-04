@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { notifyVendorsOfPaidOrder } from "@/lib/orderNotifications";
+import { completeVerifiedOrderPayment } from "@/lib/orderNotifications";
 
 export async function POST(req: Request) {
   try {
@@ -23,19 +23,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ status: "SUCCESS", payment, message: "Payment already verified." });
     }
 
-    const updatedPayment = await prisma.payment.update({
-      where: { id: payment.id },
-      data: {
-        status: "SUCCESS",
-        verifiedAt: new Date(),
-      },
-    });
-
-    await prisma.order.update({
-      where: { id: payment.orderId },
-      data: { status: "PROCESSING" },
-    });
-    await notifyVendorsOfPaidOrder(payment.orderId);
+    const finalization = await completeVerifiedOrderPayment(payment.id);
+    if (finalization === "cancelled") return NextResponse.json({ error: "This order has been cancelled." }, { status: 409 });
+    if (finalization === "missing") return NextResponse.json({ error: "Payment record not found" }, { status: 404 });
+    const updatedPayment = await prisma.payment.findUnique({ where: { id: payment.id } });
 
     return NextResponse.json({
       status: "SUCCESS",

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { activateVerifiedPremiumListing } from "@/lib/adCampaignNotifications";
 import { prisma } from "@/lib/prisma";
-import { notifyVendorsOfPaidOrder } from "@/lib/orderNotifications";
+import { completeVerifiedOrderPayment } from "@/lib/orderNotifications";
 
 type FlutterwaveWebhook = {
   event?: string;
@@ -73,17 +73,7 @@ export async function POST(request: Request) {
   }
   if (!payment) return NextResponse.json({ received: true });
 
-  await prisma.$transaction([
-    prisma.payment.update({
-      where: { id: payment.id },
-      data: { status: "SUCCESS", verifiedAt: new Date() },
-    }),
-    prisma.order.update({
-      where: { id: payment.orderId },
-      data: { status: "PROCESSING" },
-    }),
-  ]);
-  await notifyVendorsOfPaidOrder(payment.orderId);
+  await completeVerifiedOrderPayment(payment.id);
 
   return NextResponse.json({ received: true });
 }

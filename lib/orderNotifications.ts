@@ -1,34 +1,105 @@
 import { prisma } from "@/lib/prisma";
 
-export async function notifyVendorsOfPaidOrder(orderId: string) {
-  try {
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
+export type VerifiedPaymentFinalization = "processed" | "already-processed" | "cancelled" | "missing";
+
+/**
+ * Finalizes a provider-verified customer payment and all related vendor
+ * notifications together. The conditional payment update makes a callback
+ * and a provider webhook safe to process concurrently.
+ */
+export async function completeVerifiedOrderPayment(paymentId: string): Promise<VerifiedPaymentFinalization> {
+  return prisma.$transaction(async (tx) => {
+    const payment = await tx.payment.findUnique({
+      where: { id: paymentId },
       select: {
-        orderNumber: true,
-        items: { select: { quantity: true, product: { select: { vendor: { select: { userId: true } } } } } },
+        id: true,
+        status: true,
+        orderId: true,
+        order: {
+          select: {
+            status: true,
+            orderNumber: true,
+            items: {
+              select: {
+                quantity: true,
+                adCampaignId: true,
+                attributedQuantity: true,
+                product: { select: { vendor: { select: { userId: true } } } },
+                adCampaign: {
+                  select: {
+                    product: { select: { name: true } },
+                    vendor: { select: { userId: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
-    if (!order) return;
+
+    if (!payment) return "missing";
+    if (payment.status === "SUCCESS") return "already-processed";
+    if (payment.order.status === "CANCELLED") return "cancelled";
+
+    const verifiedAt = new Date();
+    const paymentClaimed = await tx.payment.updateMany({
+      where: { id: payment.id, status: { not: "SUCCESS" } },
+      data: { status: "SUCCESS", verifiedAt },
+    });
+    if (!paymentClaimed.count) return "already-processed";
+
+    await tx.order.update({
+      where: { id: payment.orderId },
+      data: { status: "PROCESSING" },
+    });
 
     const itemsByVendor = new Map<string, number>();
-    for (const item of order.items) {
+    for (const item of payment.order.items) {
       const vendorUserId = item.product.vendor.userId;
       itemsByVendor.set(vendorUserId, (itemsByVendor.get(vendorUserId) || 0) + item.quantity);
     }
-
     if (itemsByVendor.size) {
-      await prisma.notification.createMany({
+      await tx.notification.createMany({
         data: [...itemsByVendor.entries()].map(([userId, quantity]) => ({
           userId,
           type: "ORDER_STATUS" as const,
           title: "New paid order ready for fulfillment",
-          message: `Order #${order.orderNumber} has been paid and includes ${quantity} item${quantity === 1 ? "" : "s"} from your shop.`,
+          message: `Order #${payment.order.orderNumber} has been paid and includes ${quantity} item${quantity === 1 ? "" : "s"} from your shop.`,
           link: "/dashboard/vendor",
         })),
       });
     }
-  } catch (error) {
-    console.error("Unable to notify vendors about paid order:", error);
-  }
+
+    const conversions = new Map<string, { userId: string; productName: string; quantity: number }>();
+    for (const item of payment.order.items) {
+      if (!item.adCampaignId || !item.adCampaign || item.attributedQuantity <= 0) continue;
+      const current = conversions.get(item.adCampaignId);
+      conversions.set(item.adCampaignId, {
+        userId: item.adCampaign.vendor.userId,
+        productName: item.adCampaign.product.name,
+        quantity: (current?.quantity || 0) + item.attributedQuantity,
+      });
+    }
+
+    for (const [campaignId, conversion] of conversions) {
+      const campaignClaimed = await tx.adCampaign.updateMany({
+        where: { id: campaignId, firstAttributedSaleNotifiedAt: null },
+        data: { firstAttributedSaleNotifiedAt: verifiedAt },
+      });
+      if (!campaignClaimed.count) continue;
+
+      await tx.notification.create({
+        data: {
+          userId: conversion.userId,
+          type: "SYSTEM",
+          title: "Your Premium Listing made its first paid sale",
+          message: `“${conversion.productName}” generated ${conversion.quantity} verified paid unit${conversion.quantity === 1 ? "" : "s"} from its Premium Listing in order #${payment.order.orderNumber}.`,
+          link: `/dashboard/vendor/advertise/${campaignId}/report`,
+        },
+      });
+    }
+
+    return "processed";
+  });
 }
