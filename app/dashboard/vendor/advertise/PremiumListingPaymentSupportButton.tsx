@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { HelpCircle, Send } from "lucide-react";
 
 const reasons = [
@@ -43,6 +44,7 @@ export function PremiumListingPaymentSupportButton({
   if (supportRequest) {
     return (
       <div className="min-w-52 space-y-2 text-right">
+        <Link href={`/dashboard/vendor/advertise/${encodeURIComponent(campaignId)}/support`} className="block text-xs font-bold text-blue-600 hover:underline">View support request</Link>
         <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${supportStatusClasses[supportRequest.status] || supportStatusClasses.OPEN}`}>
           Payment support: {supportRequest.status.replaceAll("_", " ")}
         </span>

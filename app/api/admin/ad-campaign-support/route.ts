@@ -45,7 +45,7 @@ export async function PUT(request: Request) {
           type: "SYSTEM",
           title: "Premium Listing payment support updated",
           message: `Your payment-reconciliation request for ${existing.campaign.product.name} is now ${input.status.toLowerCase().replaceAll("_", " ")}.`,
-          link: `/dashboard/vendor/advertise?campaign=${encodeURIComponent(existing.campaign.id)}`,
+          link: `/dashboard/vendor/advertise/${encodeURIComponent(existing.campaign.id)}/support`,
         },
       });
     }
