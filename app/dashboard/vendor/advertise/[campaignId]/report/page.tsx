@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, BarChart3, CalendarDays, CircleDollarSign, MousePointerClick, ReceiptText, ShoppingBag, Sparkles, TrendingUp } from "lucide-react";
+import { ArrowLeft, BarChart3, CalendarDays, CircleDollarSign, Download, MousePointerClick, ReceiptText, ShoppingBag, Sparkles, TrendingUp } from "lucide-react";
 import { getCurrentUser } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 
@@ -140,7 +140,7 @@ export default async function CampaignReportPage({
     <section className="mx-auto max-w-4xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div><Link href="/dashboard/vendor/advertise" className="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-blue-600"><ArrowLeft className="h-4 w-4" /> Back to Premium Listings</Link><h1 className="mt-3 flex items-center gap-2 text-2xl font-black"><BarChart3 className="h-6 w-6 text-blue-600" /> Campaign performance</h1><p className="mt-1 text-sm text-gray-500">{campaign.product.name} · {campaign.package.toLowerCase()} Premium Listing</p></div>
-        <Link href={`/dashboard/vendor/advertise/${campaign.id}/receipt`} className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800"><ReceiptText className="h-4 w-4" /> View receipt</Link>
+        <div className="flex flex-wrap gap-2"><a href={`/api/ad-campaigns/${campaign.id}/report?range=${range}`} className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800"><Download className="h-4 w-4" /> Download CSV</a><Link href={`/dashboard/vendor/advertise/${campaign.id}/receipt`} className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800"><ReceiptText className="h-4 w-4" /> View receipt</Link></div>
       </div>
 
       <div className="flex flex-wrap gap-2">
