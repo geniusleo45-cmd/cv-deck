@@ -16,6 +16,8 @@ import {
   EyeOff,
   LifeBuoy,
   CreditCard,
+  Megaphone,
+  ArrowRight,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -88,6 +90,16 @@ export default async function AdminDashboardPage() {
           </p>
         </div>
       </div>
+
+      <section aria-labelledby="admin-premium-listings-heading" className="flex flex-col gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-900 dark:bg-amber-950/20 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 id="admin-premium-listings-heading" className="flex items-center gap-2 text-lg font-black text-gray-900 dark:text-white"><Megaphone className="h-5 w-5 text-amber-600" /> Premium Listings</h2>
+          <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">Review vendor promotions, advertising revenue, campaign status, and performance.</p>
+        </div>
+        <Button asChild className="w-full shrink-0 gap-2 bg-blue-600 font-bold text-white hover:bg-blue-700 sm:w-auto">
+          <Link href="/dashboard/admin/advertising">Open Premium Listings <ArrowRight className="h-4 w-4" /></Link>
+        </Button>
+      </section>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Link href="/dashboard/admin/reports?status=PENDING" className="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-red-900/60 dark:bg-red-950/20">
