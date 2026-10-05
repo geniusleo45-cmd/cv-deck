@@ -32,14 +32,19 @@ export async function PUT(request: Request) {
     }
 
     const adminNote = input.adminNote || null;
-    const changed = existing.status !== input.status || existing.adminNote !== adminNote;
-    const supportRequest = await prisma.adCampaignSupportRequest.update({
-      where: { id: existing.id },
+    const supportRequest = await prisma.$transaction(async (tx) => {
+    const changed = await tx.adCampaignSupportRequest.updateMany({
+      where: { id: existing.id, OR: [
+        { status: { not: input.status } },
+        ...(adminNote === null
+          ? [{ adminNote: { not: null } }]
+          : [{ adminNote: null }, { adminNote: { not: adminNote } }]),
+      ] },
       data: { status: input.status, adminNote },
     });
 
-    if (changed) {
-      await prisma.notification.create({
+    if (changed.count) {
+      await tx.notification.create({
         data: {
           userId: existing.userId,
           type: "SYSTEM",
@@ -49,6 +54,8 @@ export async function PUT(request: Request) {
         },
       });
     }
+    return tx.adCampaignSupportRequest.findUniqueOrThrow({ where: { id: existing.id } });
+    });
 
     return NextResponse.json(supportRequest);
   } catch (error) {

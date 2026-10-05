@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const statuses = ["OPEN", "UNDER_REVIEW", "RESOLVED", "REJECTED"] as const;
 
@@ -13,6 +14,7 @@ export function CampaignSupportActions({
   initialStatus: string;
   initialNote?: string | null;
 }) {
+  const router = useRouter();
   const [status, setStatus] = useState(initialStatus);
   const [adminNote, setAdminNote] = useState(initialNote || "");
   const [saving, setSaving] = useState(false);
@@ -29,6 +31,7 @@ export function CampaignSupportActions({
       });
       const data = await response.json();
       setMessage(response.ok ? "Updated and shared with vendor" : data.error || "Unable to update");
+      if (response.ok) router.refresh();
     } catch {
       setMessage("Unable to update");
     } finally {
