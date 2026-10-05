@@ -2,7 +2,7 @@ import { getCurrentUser } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Package, ShoppingBag, DollarSign, PlusCircle, AlertTriangle, Star } from "lucide-react";
+import { ShieldCheck, Package, ShoppingBag, DollarSign, PlusCircle, AlertTriangle, Star, Megaphone, ArrowRight } from "lucide-react";
 import { FulfillmentActions } from "@/components/vendor/FulfillmentActions";
 import { ReviewReplyForm } from "./ReviewReplyForm";
 
@@ -82,6 +82,17 @@ export default async function VendorDashboardPage() {
           </Link>
         </Button>
       </div>
+
+      <section aria-labelledby="premium-listings-heading" className="flex flex-col gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-900 dark:bg-amber-950/20 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 id="premium-listings-heading" className="flex items-center gap-2 text-lg font-black text-gray-900 dark:text-white"><Megaphone className="h-5 w-5 text-amber-600" /> Premium Listings</h2>
+          <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">Promote your products in the marketplace’s Sponsored section with daily, weekly, or monthly packages.</p>
+          <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">{verificationStatus === "VERIFIED" ? "Choose a product, manage your promotions, and view campaign performance." : "Your shop must be verified before you can purchase a promotion."}</p>
+        </div>
+        <Button asChild className="w-full shrink-0 gap-2 bg-blue-600 font-bold text-white hover:bg-blue-700 sm:w-auto">
+          <Link href="/dashboard/vendor/advertise">Open Premium Listings <ArrowRight className="h-4 w-4" /></Link>
+        </Button>
+      </section>
 
       {/* Verification Warning Alert if Pending */}
       {verificationStatus !== "VERIFIED" && (
