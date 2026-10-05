@@ -15,6 +15,7 @@ import {
   Flag,
   EyeOff,
   LifeBuoy,
+  CreditCard,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -30,7 +31,8 @@ export default async function AdminDashboardPage() {
     pendingReports,
     hiddenProducts,
     pausedVendors,
-    activeSupportCases,
+    activeOrderSupportCases,
+    activeAdPaymentSupportCases,
   ] = await Promise.all([
     prisma.user.findMany({ orderBy: { createdAt: "desc" }, take: 10 }),
     prisma.vendor.findMany({
@@ -65,6 +67,7 @@ export default async function AdminDashboardPage() {
     prisma.product.count({ where: { status: "INACTIVE" } }),
     prisma.vendor.count({ where: { status: "REJECTED" } }),
     prisma.dispute.count({ where: { status: { in: ["OPEN", "UNDER_REVIEW"] } } }),
+    prisma.adCampaignSupportRequest.count({ where: { status: { in: ["OPEN", "UNDER_REVIEW"] } } }),
   ]);
 
   const totalRevenue = paymentsSum._sum.amount || 0;
@@ -86,7 +89,7 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Link href="/dashboard/admin/reports?status=PENDING" className="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-red-900/60 dark:bg-red-950/20">
           <div className="flex items-center justify-between text-xs font-bold text-red-800 dark:text-red-300"><span>Pending marketplace reports</span><Flag className="h-4 w-4" /></div>
           <p className="mt-2 text-3xl font-black text-red-900 dark:text-red-100">{pendingReports}</p>
@@ -103,9 +106,14 @@ export default async function AdminDashboardPage() {
           <p className="mt-1 text-xs text-purple-700 dark:text-purple-300">Open shop moderation →</p>
         </Link>
         <Link href="/dashboard/admin/disputes?status=OPEN" className="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-blue-900/60 dark:bg-blue-950/20">
-          <div className="flex items-center justify-between text-xs font-bold text-blue-800 dark:text-blue-300"><span>Active support cases</span><LifeBuoy className="h-4 w-4" /></div>
-          <p className="mt-2 text-3xl font-black text-blue-900 dark:text-blue-100">{activeSupportCases}</p>
+          <div className="flex items-center justify-between text-xs font-bold text-blue-800 dark:text-blue-300"><span>Active order support</span><LifeBuoy className="h-4 w-4" /></div>
+          <p className="mt-2 text-3xl font-black text-blue-900 dark:text-blue-100">{activeOrderSupportCases}</p>
           <p className="mt-1 text-xs text-blue-700 dark:text-blue-300">Review buyer order issues →</p>
+        </Link>
+        <Link href="/dashboard/admin/advertising/payment-support?status=OPEN" className="rounded-2xl border border-violet-200 bg-violet-50 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-violet-900/60 dark:bg-violet-950/20">
+          <div className="flex items-center justify-between text-xs font-bold text-violet-800 dark:text-violet-300"><span>Ad payment support</span><CreditCard className="h-4 w-4" /></div>
+          <p className="mt-2 text-3xl font-black text-violet-900 dark:text-violet-100">{activeAdPaymentSupportCases}</p>
+          <p className="mt-1 text-xs text-violet-700 dark:text-violet-300">Reconcile Premium Listing checkouts →</p>
         </Link>
       </section>
 

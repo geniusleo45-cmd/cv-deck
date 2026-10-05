@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart3, CircleDollarSign, Clock3, Megaphone, MousePointerClick, Sparkles } from "lucide-react";
+import { BarChart3, CircleDollarSign, Clock3, LifeBuoy, Megaphone, MousePointerClick, Sparkles } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
 
@@ -152,7 +152,7 @@ export default async function AdminAdvertisingPage({
           <h1 className="flex items-center gap-2 text-2xl font-black"><Megaphone className="h-6 w-6 text-amber-500" /> Premium Listings</h1>
           <p className="mt-1 max-w-2xl text-sm text-gray-500">Review paid marketplace placements, their current window, and the engagement recorded for each promotion.</p>
         </div>
-        <span className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"><Sparkles className="h-4 w-4" /> Read-only operations view</span>
+        <div className="flex flex-wrap items-center gap-2"><Link href="/dashboard/admin/advertising/payment-support" className="inline-flex items-center gap-2 rounded-full border border-blue-200 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-300 dark:hover:bg-blue-950/30"><LifeBuoy className="h-4 w-4" /> Payment support queue</Link><span className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"><Sparkles className="h-4 w-4" /> Read-only operations view</span></div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">

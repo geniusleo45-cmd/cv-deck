@@ -120,6 +120,7 @@ model User {
   wishlistItems    WishlistItem[]
   reports          Report[]
   disputes         Dispute[]
+  adCampaignSupportRequests AdCampaignSupportRequest[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -226,6 +227,7 @@ model AdCampaign {
   events  AdCampaignEvent[]
   cartItems CartItem[]
   orderItems OrderItem[]
+  supportRequest AdCampaignSupportRequest?
 
   @@index([vendorId, status])
   @@index([productId, status])
@@ -243,6 +245,25 @@ model AdCampaignEvent {
 
   @@unique([campaignId, type, visitorId, day])
   @@index([campaignId, type])
+}
+
+model AdCampaignSupportRequest {
+  id        String        @id @default(cuid())
+  campaignId String       @unique
+  userId    String
+  reason    String
+  details   String
+  status    DisputeStatus @default(OPEN)
+  adminNote String?
+
+  campaign AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([userId])
 }
 
 model Cart {
