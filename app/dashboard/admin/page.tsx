@@ -122,7 +122,7 @@ export default async function AdminDashboardPage() {
           <p className="mt-2 text-3xl font-black text-blue-900 dark:text-blue-100">{activeOrderSupportCases}</p>
           <p className="mt-1 text-xs text-blue-700 dark:text-blue-300">Review buyer order issues →</p>
         </Link>
-        <Link href="/dashboard/admin/advertising/payment-support?status=OPEN" className="rounded-2xl border border-violet-200 bg-violet-50 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-violet-900/60 dark:bg-violet-950/20">
+        <Link href="/dashboard/admin/advertising/payment-support?status=ACTIVE" className="rounded-2xl border border-violet-200 bg-violet-50 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-violet-900/60 dark:bg-violet-950/20">
           <div className="flex items-center justify-between text-xs font-bold text-violet-800 dark:text-violet-300"><span>Ad payment support</span><CreditCard className="h-4 w-4" /></div>
           <p className="mt-2 text-3xl font-black text-violet-900 dark:text-violet-100">{activeAdPaymentSupportCases}</p>
           <p className="mt-1 text-xs text-violet-700 dark:text-violet-300">Reconcile Premium Listing checkouts →</p>

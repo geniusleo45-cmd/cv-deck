@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { CampaignSupportActions } from "./CampaignSupportActions";
 
 const statuses = ["OPEN", "UNDER_REVIEW", "RESOLVED", "REJECTED"] as const;
-const filters = ["ALL", ...statuses] as const;
+const filters = ["ACTIVE", "ALL", ...statuses] as const;
 
 function statusClass(status: string) {
   if (status === "OPEN") return "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300";
@@ -29,9 +29,11 @@ export default async function AdCampaignPaymentSupportPage({
   const query = await searchParams;
   const selectedStatus = filters.includes(query.status as (typeof filters)[number])
     ? query.status as (typeof filters)[number]
-    : "OPEN";
+    : "ACTIVE";
   const supportRequests = await prisma.adCampaignSupportRequest.findMany({
-    where: selectedStatus === "ALL" ? undefined : { status: selectedStatus },
+    where: selectedStatus === "ALL" ? undefined : {
+      status: selectedStatus === "ACTIVE" ? { in: ["OPEN", "UNDER_REVIEW"] } : selectedStatus,
+    },
     include: {
       user: { select: { name: true, email: true } },
       campaign: {
@@ -47,7 +49,7 @@ export default async function AdCampaignPaymentSupportPage({
         },
       },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: selectedStatus === "ACTIVE" ? "asc" : "desc" }, { id: "asc" }],
   });
 
   return (
@@ -64,9 +66,10 @@ export default async function AdCampaignPaymentSupportPage({
       <nav aria-label="Payment support status" className="flex flex-wrap gap-2">
         {filters.map((status) => {
           const href = status === "ALL" ? "/dashboard/admin/advertising/payment-support?status=ALL" : `/dashboard/admin/advertising/payment-support?status=${status}`;
-          return <Link key={status} href={href} className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${selectedStatus === status ? "bg-blue-600 text-white" : "border bg-white text-gray-600 hover:border-blue-300 hover:text-blue-700 dark:bg-gray-900 dark:text-gray-300"}`}>{status.replaceAll("_", " ")}</Link>;
+          return <Link key={status} href={href} aria-current={selectedStatus === status ? "page" : undefined} className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${selectedStatus === status ? "bg-blue-600 text-white" : "border bg-white text-gray-600 hover:border-blue-300 hover:text-blue-700 dark:bg-gray-900 dark:text-gray-300"}`}>{status === "ACTIVE" ? "Needs attention" : status.replaceAll("_", " ")}</Link>;
         })}
       </nav>
+      <p className="text-sm text-gray-500">{supportRequests.length} request{supportRequests.length === 1 ? "" : "s"}{selectedStatus === "ACTIVE" ? " awaiting resolution. New and under-review cases appear oldest first." : " in this view."}</p>
 
       <div className="overflow-x-auto rounded-2xl border bg-white dark:bg-gray-900">
         <table className="w-full min-w-[1120px] text-left text-sm">
