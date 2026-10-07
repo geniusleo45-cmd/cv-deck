@@ -112,8 +112,8 @@ export async function POST(req: Request) {
       order,
     });
   } catch (error: any) {
-    if (error.name === "ZodError") {
-      return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.issues[0]?.message || "Invalid checkout request." }, { status: 400 });
     }
     console.error("Checkout POST Error:", error);
     return NextResponse.json({ error: "Failed to process checkout" }, { status: 500 });
