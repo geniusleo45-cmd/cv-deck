@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Prisma } from "@prisma/client";
 import { BarChart3, CircleDollarSign, Clock3, LifeBuoy, Megaphone, MousePointerClick, Sparkles } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
@@ -56,7 +57,14 @@ export default async function AdminAdvertisingPage({
     ? query.status as CampaignStatus
     : "ALL";
   const now = new Date();
-  const campaignWhere = selectedStatus === "ALL" ? {} : { status: selectedStatus };
+  // Match the displayed status before applying the 100-row limit, even before maintenance runs.
+  const campaignWhere: Prisma.AdCampaignWhereInput = selectedStatus === "ALL"
+    ? {}
+    : selectedStatus === "EXPIRED"
+      ? { OR: [{ status: "EXPIRED" }, { status: "ACTIVE", endsAt: { lte: now } }] }
+      : selectedStatus === "ACTIVE"
+        ? { status: "ACTIVE", OR: [{ endsAt: { gt: now } }, { endsAt: null }] }
+        : { status: selectedStatus };
 
   const [paidCampaigns, livePromotions, pendingPayments, campaigns, verifiedAttributedUnits] = await Promise.all([
     prisma.adCampaign.aggregate({
@@ -175,7 +183,7 @@ export default async function AdminAdvertisingPage({
 
       <div className="overflow-x-auto rounded-2xl border bg-white dark:bg-gray-900">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b p-5">
-          <div><h2 className="font-bold">Promotion activity</h2><p className="mt-1 text-xs text-gray-500">Active and expired campaigns are paid placements. An overdue active campaign is displayed as expired until the hourly maintenance task updates it.</p></div>
+          <div><h2 className="font-bold">Promotion activity</h2><p className="mt-1 text-xs text-gray-500">Active and expired campaigns are paid placements. Filters and badges reflect expiry times when this page loads, without waiting for daily maintenance.</p></div>
           <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-gray-500"><span className="inline-flex items-center gap-1"><MousePointerClick className="h-3.5 w-3.5" /> One daily event per browser</span><span className="inline-flex items-center gap-1"><CircleDollarSign className="h-3.5 w-3.5 text-emerald-600" /> Verified sponsored-cart sales only</span></div>
         </div>
         <table className="w-full min-w-[1080px] text-left text-sm">
