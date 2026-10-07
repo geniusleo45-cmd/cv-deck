@@ -42,17 +42,29 @@ export async function completeVerifiedOrderPayment(paymentId: string): Promise<V
     if (payment.status === "SUCCESS") return "already-processed";
     if (payment.order.status === "CANCELLED") return "cancelled";
 
+    // Claim the same order row that cancellation and expiry claim, before
+    // touching payment rows. Only one transition out of PENDING can win.
+    const orderClaimed = await tx.order.updateMany({
+      where: { id: payment.orderId, status: "PENDING" },
+      data: { status: "PROCESSING" },
+    });
+    if (!orderClaimed.count) {
+      const latest = await tx.order.findUnique({
+        where: { id: payment.orderId },
+        select: { status: true, payment: { select: { status: true } } },
+      });
+      if (!latest) return "missing";
+      if (latest.status === "CANCELLED") return "cancelled";
+      if (latest.payment?.status === "SUCCESS") return "already-processed";
+      throw new Error("Order is not pending and its payment is not finalized.");
+    }
+
     const verifiedAt = new Date();
     const paymentClaimed = await tx.payment.updateMany({
       where: { id: payment.id, status: { not: "SUCCESS" } },
       data: { status: "SUCCESS", verifiedAt },
     });
     if (!paymentClaimed.count) return "already-processed";
-
-    await tx.order.update({
-      where: { id: payment.orderId },
-      data: { status: "PROCESSING" },
-    });
 
     const itemsByVendor = new Map<string, number>();
     for (const item of payment.order.items) {
