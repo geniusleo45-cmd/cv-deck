@@ -19,6 +19,7 @@ export async function completeVerifiedOrderPayment(paymentId: string): Promise<V
           select: {
             status: true,
             orderNumber: true,
+            userId: true,
             items: {
               select: {
                 quantity: true,
@@ -39,8 +40,23 @@ export async function completeVerifiedOrderPayment(paymentId: string): Promise<V
     });
 
     if (!payment) return "missing";
+    async function recordCancelledPayment(): Promise<VerifiedPaymentFinalization> {
+      if (!payment) return "missing";
+      const claimed = await tx.payment.updateMany({
+        where: { id: payment.id, status: { not: "SUCCESS" } },
+        data: { status: "SUCCESS", verifiedAt: new Date(), authorizationUrl: null },
+      });
+      if (claimed.count) {
+        const admins = await tx.user.findMany({ where: { role: "ADMIN" }, select: { id: true } });
+        await tx.notification.createMany({ data: [
+          { userId: payment.order.userId, type: "SYSTEM", title: "Payment received — needs review", message: `Payment for cancelled order #${payment.order.orderNumber} was confirmed. Your order remains cancelled. Please contact support for manual payment review; no refund has been issued automatically.`, link: "/dashboard/orders" },
+          ...admins.map((admin) => ({ userId: admin.id, type: "SYSTEM" as const, title: "Cancelled order payment needs review", message: `Payment for cancelled order #${payment.order.orderNumber} was verified. Review it with the payment provider; do not fulfill the cancelled order.`, link: "/dashboard/admin/payment-review" })),
+        ] });
+      }
+      return "cancelled";
+    }
+    if (payment.order.status === "CANCELLED") return recordCancelledPayment();
     if (payment.status === "SUCCESS") return "already-processed";
-    if (payment.order.status === "CANCELLED") return "cancelled";
 
     // Claim the same order row that cancellation and expiry claim, before
     // touching payment rows. Only one transition out of PENDING can win.
@@ -54,7 +70,7 @@ export async function completeVerifiedOrderPayment(paymentId: string): Promise<V
         select: { status: true, payment: { select: { status: true } } },
       });
       if (!latest) return "missing";
-      if (latest.status === "CANCELLED") return "cancelled";
+      if (latest.status === "CANCELLED") return recordCancelledPayment();
       if (latest.payment?.status === "SUCCESS") return "already-processed";
       throw new Error("Order is not pending and its payment is not finalized.");
     }

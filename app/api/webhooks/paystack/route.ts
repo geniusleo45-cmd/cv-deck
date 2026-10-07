@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true });
   }
 
-  if (payment.status === "SUCCESS" || payment.order.status === "CANCELLED") return NextResponse.json({ received: true });
+  if (payment.status === "SUCCESS") return NextResponse.json({ received: true });
   const response = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, { headers: { Authorization: `Bearer ${secret}` } });
   const result = await response.json();
   const isPaid = response.ok && result.status === true && result.data?.status === "success" && result.data?.reference === reference && result.data?.currency === "NGN" && result.data?.amount >= Math.round(payment.amount * 100);

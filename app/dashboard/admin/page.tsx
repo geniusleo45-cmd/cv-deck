@@ -101,6 +101,8 @@ export default async function AdminDashboardPage() {
         </Button>
       </section>
 
+      <Link href="/dashboard/admin/payment-review" className="block rounded-xl border border-amber-200 p-4 text-sm font-bold text-amber-800 dark:text-amber-300">Cancelled-order payments — manual review →</Link>
+
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Link href="/dashboard/admin/reports?status=PENDING" className="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-red-900/60 dark:bg-red-950/20">
           <div className="flex items-center justify-between text-xs font-bold text-red-800 dark:text-red-300"><span>Pending marketplace reports</span><Flag className="h-4 w-4" /></div>
