@@ -64,6 +64,7 @@ export function ProductCard({ product, compact = false, mobileCompact = false, s
   const [saved, setSaved] = useState((product.wishlistItems?.length ?? 0) > 0);
   const [saving, setSaving] = useState(false);
   const galleryRef = useRef<HTMLDivElement>(null);
+  const swipeStart = useRef<{ x: number; y: number; index: number } | null>(null);
 
   useEffect(() => {
     if (!sponsored || !sponsoredCampaignId || hasTrackedImpression.current) return;
@@ -87,6 +88,14 @@ export function ProductCard({ product, compact = false, mobileCompact = false, s
     if (galleryImages.length) imageUrl = galleryImages[0];
   } catch (e) {
     // fallback
+  }
+
+  function moveGallery(direction: number) {
+    const gallery = galleryRef.current;
+    if (!gallery || !gallery.clientWidth || galleryImages.length < 2) return;
+    const current = Math.round(gallery.scrollLeft / gallery.clientWidth);
+    const next = (current + direction + galleryImages.length) % galleryImages.length;
+    gallery.scrollTo({ left: next * gallery.clientWidth, behavior: "smooth" });
   }
 
   const getConditionColor = (cond: string) => {
@@ -158,14 +167,25 @@ export function ProductCard({ product, compact = false, mobileCompact = false, s
     <div ref={cardRef} className={`group flex overflow-hidden rounded-2xl border bg-white shadow-sm transition-all duration-200 hover:shadow-lg dark:bg-gray-900 ${sponsored ? "border-amber-300 ring-1 ring-amber-100 dark:border-amber-700 dark:ring-amber-950" : ""} ${compact ? "flex-row" : mobileCompact ? "flex-row sm:flex-col" : "flex-col"}`}>
       {/* Product Image Header */}
       <div className={`relative shrink-0 overflow-hidden bg-gray-100 dark:bg-gray-800 ${compact ? "h-28 w-28 sm:h-32 sm:w-40" : mobileCompact ? "h-28 w-28 sm:aspect-[4/3] sm:h-auto sm:w-full" : "aspect-[4/3] w-full"}`}>
-        <div ref={galleryRef} tabIndex={0} aria-label={`${product.name} image gallery; scroll horizontally for more images`} className="absolute inset-0 flex snap-x snap-mandatory overflow-x-auto">
+        <div ref={galleryRef} tabIndex={0} aria-label={`${product.name} image gallery; scroll horizontally for more images`} className="absolute inset-0 flex snap-x snap-mandatory overflow-x-auto"
+          onTouchStart={(event) => { const touch = event.touches[0]; const gallery = event.currentTarget; swipeStart.current = event.touches.length === 1 && gallery.clientWidth ? { x: touch.clientX, y: touch.clientY, index: Math.round(gallery.scrollLeft / gallery.clientWidth) } : null; }}
+          onTouchCancel={() => { swipeStart.current = null; }}
+          onTouchEnd={(event) => {
+            const start = swipeStart.current; swipeStart.current = null;
+            const touch = event.changedTouches[0];
+            if (!start || !touch || galleryImages.length < 2) return;
+            const dx = touch.clientX - start.x;
+            if (Math.abs(dx) < 40 || Math.abs(dx) <= Math.abs(touch.clientY - start.y)) return;
+            if (start.index === galleryImages.length - 1 && dx < 0) event.currentTarget.scrollTo({ left: 0, behavior: "smooth" });
+            if (start.index === 0 && dx > 0) event.currentTarget.scrollTo({ left: (galleryImages.length - 1) * event.currentTarget.clientWidth, behavior: "smooth" });
+          }}>
           {(galleryImages.length ? galleryImages : [imageUrl]).map((src, index) => <div key={`${src}-${index}`} className="relative h-full w-full shrink-0 snap-center">
             <Image src={src} alt={`${product.name}, image ${index + 1}`} fill sizes={compact || mobileCompact ? "(max-width: 640px) 112px, 33vw" : "(max-width: 640px) 100vw, 33vw"} className="object-cover" />
           </div>)}
         </div>
         {galleryImages.length > 1 && <div className="pointer-events-none absolute inset-x-1 top-1/2 flex -translate-y-1/2 justify-between">
-          <button type="button" aria-label={`Previous image of ${product.name}`} onClick={() => galleryRef.current?.scrollBy({ left: -galleryRef.current.clientWidth, behavior: "smooth" })} className="pointer-events-auto rounded-full bg-white/90 px-2 py-1 text-black shadow">‹</button>
-          <button type="button" aria-label={`Next image of ${product.name}`} onClick={() => galleryRef.current?.scrollBy({ left: galleryRef.current.clientWidth, behavior: "smooth" })} className="pointer-events-auto rounded-full bg-white/90 px-2 py-1 text-black shadow">›</button>
+          <button type="button" aria-label={`Previous image of ${product.name}`} onClick={() => moveGallery(-1)} className="pointer-events-auto rounded-full bg-white/90 px-2 py-1 text-black shadow">‹</button>
+          <button type="button" aria-label={`Next image of ${product.name}`} onClick={() => moveGallery(1)} className="pointer-events-auto rounded-full bg-white/90 px-2 py-1 text-black shadow">›</button>
         </div>}
         <div className={`absolute left-2 top-2 flex flex-wrap gap-1 ${compact ? "max-w-[70px]" : mobileCompact ? "max-w-[70px] sm:left-3 sm:top-3 sm:max-w-none sm:gap-1.5" : "left-3 top-3 gap-1.5"}`}>
           <Badge className={`font-bold text-[10px] uppercase px-2 py-0.5 ${getConditionColor(product.condition)}`}>
