@@ -26,7 +26,9 @@ export async function POST(request: Request) {
     if (!campaign || campaign.status !== "PENDING_PAYMENT") return NextResponse.json({ received: true });
 
     const response = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, { headers: { Authorization: `Bearer ${secret}` } });
+    if (!response.ok) return NextResponse.json({ error: "Payment verification temporarily unavailable." }, { status: 503 });
     const result = await response.json();
+    if (result.status !== true) return NextResponse.json({ error: "Payment verification could not be completed." }, { status: 503 });
     const isPaid = response.ok
       && result.status === true
       && result.data?.status === "success"
@@ -39,7 +41,9 @@ export async function POST(request: Request) {
 
   if (payment.status === "SUCCESS") return NextResponse.json({ received: true });
   const response = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, { headers: { Authorization: `Bearer ${secret}` } });
+  if (!response.ok) return NextResponse.json({ error: "Payment verification temporarily unavailable." }, { status: 503 });
   const result = await response.json();
+  if (result.status !== true) return NextResponse.json({ error: "Payment verification could not be completed." }, { status: 503 });
   const isPaid = response.ok && result.status === true && result.data?.status === "success" && result.data?.reference === reference && result.data?.currency === "NGN" && result.data?.amount >= Math.round(payment.amount * 100);
   if (!isPaid) return NextResponse.json({ received: true });
   await completeVerifiedOrderPayment(payment.id);

@@ -55,7 +55,9 @@ export async function POST(request: Request) {
     `https://api.flutterwave.com/v3/transactions/${encodeURIComponent(String(transactionId))}/verify`,
     { headers: { Authorization: `Bearer ${process.env.FLW_SECRET_KEY}` } }
   );
+  if (!verificationResponse.ok) return NextResponse.json({ error: "Payment verification temporarily unavailable." }, { status: 503 });
   const verification = await verificationResponse.json();
+  if (verification.status !== "success") return NextResponse.json({ error: "Payment verification could not be completed." }, { status: 503 });
   const isVerified = verificationResponse.ok
     && verification.status === "success"
     && verification.data?.status === "successful"
