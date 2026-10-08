@@ -66,7 +66,7 @@ export default async function AdvertisePage({
   const requestedCampaign = requestedCampaignId && vendor
     ? await prisma.adCampaign.findFirst({
       where: { id: requestedCampaignId, vendorId: vendor.id },
-      select: { id: true, productId: true, package: true, status: true, paymentProvider: true, endsAt: true, product: { select: { id: true, name: true } } },
+      select: { id: true, productId: true, package: true, amount: true, status: true, paymentProvider: true, endsAt: true, product: { select: { id: true, name: true } } },
     })
     : null;
   const resumeCampaign = requestedCampaign && requestedCampaign.id === campaignId && (
