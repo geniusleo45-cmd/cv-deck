@@ -101,7 +101,7 @@ export default async function AdminDashboardPage() {
         </Button>
       </section>
 
-      <Link href="/dashboard/admin/payment-review" className="block rounded-xl border border-amber-200 p-4 text-sm font-bold text-amber-800 dark:text-amber-300">Cancelled-order payments — manual review →</Link>
+      <Link href="/dashboard/admin/payment-review" className="block rounded-xl border border-amber-200 p-4 text-sm font-bold text-amber-800 dark:text-amber-300">Payment review — interrupted checkouts and cancelled-order payments →</Link>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Link href="/dashboard/admin/reports?status=PENDING" className="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-red-900/60 dark:bg-red-950/20">
