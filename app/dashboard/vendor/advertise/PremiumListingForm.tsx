@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { premiumPackages } from "@/lib/premiumListings";
 
 type Product = { id: string; name: string; price: number };
 type PackageName = "DAILY" | "WEEKLY" | "MONTHLY";
@@ -8,6 +9,7 @@ type ResumeCampaign = {
   id: string;
   productId: string;
   package: PackageName;
+  amount: number;
   paymentProvider: string | null;
 };
 type RenewalCampaign = {
@@ -17,9 +19,9 @@ type RenewalCampaign = {
   package: PackageName;
 };
 const packages: { id: PackageName; title: string; price: number; duration: string; description: string }[] = [
-  { id: "DAILY", title: "Daily", price: 1000, duration: "1 day", description: "A boost for flash offers and new stock." },
-  { id: "WEEKLY", title: "Weekly", price: 5000, duration: "7 days", description: "Consistent visibility for a full week." },
-  { id: "MONTHLY", title: "Monthly", price: 15000, duration: "30 days", description: "Best value for ongoing promotion." },
+  { id: "DAILY", title: "Daily", price: premiumPackages.DAILY.amount, duration: "1 day", description: "A boost for flash offers and new stock." },
+  { id: "WEEKLY", title: "Weekly", price: premiumPackages.WEEKLY.amount, duration: "7 days", description: "Consistent visibility for a full week." },
+  { id: "MONTHLY", title: "Monthly", price: premiumPackages.MONTHLY.amount, duration: "30 days", description: "Best value for ongoing promotion." },
 ];
 
 export function PremiumListingForm({ products, resumeCampaign, renewalCampaign }: { products: Product[]; resumeCampaign?: ResumeCampaign; renewalCampaign?: RenewalCampaign }) {
@@ -30,7 +32,9 @@ export function PremiumListingForm({ products, resumeCampaign, renewalCampaign }
   const [saving, setSaving] = useState(false);
   const [paymentProvider, setPaymentProvider] = useState<"paystack" | "flutterwave" | null>(null);
   const [checkoutProvider, setCheckoutProvider] = useState<"paystack" | "flutterwave" | null>(resumeCampaign?.paymentProvider === "PAYSTACK" ? "paystack" : resumeCampaign?.paymentProvider === "FLUTTERWAVE" ? "flutterwave" : null);
-  const selected = packages.find((item) => item.id === packageName)!;
+  const [campaignAmount, setCampaignAmount] = useState<number | null>(resumeCampaign?.amount ?? null);
+  const selectedPackage = packages.find((item) => item.id === packageName)!;
+  const selected = { ...selectedPackage, price: campaignAmount ?? selectedPackage.price };
   const lockedProvider = checkoutProvider;
 
   async function submit(event: React.FormEvent) {
@@ -40,6 +44,7 @@ export function PremiumListingForm({ products, resumeCampaign, renewalCampaign }
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to create Premium Listing.");
       setCampaignId(data.id);
+      setCampaignAmount(data.amount);
       setPackageName(data.package as PackageName);
       setCheckoutProvider(data.paymentProvider === "PAYSTACK" ? "paystack" : data.paymentProvider === "FLUTTERWAVE" ? "flutterwave" : null);
       setMessage(response.status === 200 ? "An existing pending Premium Listing was found. Choose its secure payment method to activate it." : "Premium Listing is ready. Choose its secure payment method to activate it.");

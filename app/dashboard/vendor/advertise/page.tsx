@@ -143,7 +143,7 @@ export default async function AdvertisePage({
           {!vendor.products.length ? (
             <div className="rounded-2xl border border-dashed p-8 text-sm text-gray-500">Add an active, in-stock product before creating a Premium Listing.</div>
           ) : (
-            <PremiumListingForm key={resumeCampaign?.id || renewalCampaign?.id || "new"} products={vendor.products} resumeCampaign={resumeCampaign ? { id: resumeCampaign.id, productId: resumeCampaign.productId, package: resumeCampaign.package, paymentProvider: resumeCampaign.paymentProvider } : undefined} renewalCampaign={!resumeCampaign && renewalCampaign ? { id: renewalCampaign.id, productId: renewalCampaign.productId, productName: renewalCampaign.product.name, package: renewalCampaign.package } : undefined} />
+            <PremiumListingForm key={resumeCampaign?.id || renewalCampaign?.id || "new"} products={vendor.products} resumeCampaign={resumeCampaign ? { id: resumeCampaign.id, productId: resumeCampaign.productId, package: resumeCampaign.package, amount: resumeCampaign.amount, paymentProvider: resumeCampaign.paymentProvider } : undefined} renewalCampaign={!resumeCampaign && renewalCampaign ? { id: renewalCampaign.id, productId: renewalCampaign.productId, productName: renewalCampaign.product.name, package: renewalCampaign.package } : undefined} />
           )}
         </>
       )}
