@@ -16,6 +16,7 @@ export async function POST(request: Request) {
   if (!order) return NextResponse.json({ error: "Order not found." }, { status: 404 });
   if (order.status !== "PENDING") return NextResponse.json({ error: "This order is no longer awaiting payment." }, { status: 409 });
   if (order.payment?.status === "SUCCESS") return NextResponse.json({ error: "This order has already been paid for." }, { status: 409 });
+  if (order.payment && order.payment.provider !== "FLUTTERWAVE") return NextResponse.json({ error: "This order already has a checkout with another provider. Resume that checkout to preserve its payment reference." }, { status: 409 });
   if (order.payment?.status === "PENDING" && order.payment.authorizationUrl) return NextResponse.json({ authorizationUrl: order.payment.authorizationUrl });
 
   const reference = `cvdeck-${order.id}-${Date.now()}`;
