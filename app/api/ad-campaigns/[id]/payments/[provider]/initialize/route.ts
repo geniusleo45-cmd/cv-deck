@@ -67,7 +67,7 @@ export async function POST(
       return NextResponse.json({ authorizationUrl: campaign.authorizationUrl });
     }
     if (campaign.paymentProvider === providerName) {
-      return NextResponse.json({ error: "Your payment checkout is being prepared. Please try again in a moment." }, { status: 409 });
+      return NextResponse.json({ error: "Your checkout reference is reserved but its link is unavailable. If refreshing does not restore it, use Payment issue to request reconciliation before paying again." }, { status: 409 });
     }
     return NextResponse.json({ error: `This Premium Listing already has a ${campaign.paymentProvider === "PAYSTACK" ? "Paystack" : "Flutterwave"} checkout. Resume that checkout to keep its payment reference secure.` }, { status: 409 });
   }
@@ -112,6 +112,7 @@ export async function POST(
     try {
       response = await fetch("https://api.paystack.co/transaction/initialize", {
         method: "POST",
+        signal: AbortSignal.timeout(15000),
         headers: { Authorization: `Bearer ${gatewaySecret}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           email: campaign.vendor.user.email,
@@ -130,12 +131,10 @@ export async function POST(
       });
       result = await response.json().catch(() => ({}));
     } catch {
-      await prisma.adCampaign.updateMany({ where: { id: campaign.id, paymentProvider: providerName, paymentReference: reference, status: "PENDING_PAYMENT" }, data: { paymentProvider: null, paymentReference: null, authorizationUrl: null } });
-      return NextResponse.json({ error: "Unable to reach Paystack. Please try again." }, { status: 502 });
+      return NextResponse.json({ error: "Paystack checkout could not be confirmed. Your reference is preserved; use Payment issue to request reconciliation before paying again." }, { status: 502 });
     }
     if (!response.ok || !result.status || !result.data?.authorization_url) {
-      await prisma.adCampaign.updateMany({ where: { id: campaign.id, paymentProvider: providerName, paymentReference: reference, status: "PENDING_PAYMENT" }, data: { paymentProvider: null, paymentReference: null, authorizationUrl: null } });
-      return NextResponse.json({ error: result.message || "Unable to start Paystack payment." }, { status: 502 });
+      return NextResponse.json({ error: "Paystack did not return a confirmed checkout link. Your reference is preserved; use Payment issue to request reconciliation." }, { status: 502 });
     }
 
     await prisma.adCampaign.updateMany({

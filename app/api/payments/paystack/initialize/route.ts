@@ -20,12 +20,27 @@ export async function POST(request: Request) {
   if (order.payment && order.payment.provider !== "PAYSTACK") return NextResponse.json({ error: "This order already has a checkout with another provider. Resume that checkout to preserve its payment reference." }, { status: 409 });
   if (order.payment?.provider === "PAYSTACK" && order.payment.authorizationUrl) return NextResponse.json({ authorizationUrl: order.payment.authorizationUrl });
 
+  if (order.payment) return NextResponse.json({ error: "This payment reference is reserved but its checkout link is unavailable. Contact support to reconcile it before starting another payment." }, { status: 409 });
   const reference = `cvdeck-${order.id}-${Date.now()}`;
+  // Persist before contacting Paystack. The unique orderId prevents two callers
+  // from creating competing checkouts; ambiguous failures retain this reference.
+  try {
+    await prisma.payment.create({ data: { orderId: order.id, provider: "PAYSTACK", reference, amount: order.totalAmount } });
+  } catch {
+    return NextResponse.json({ error: "Checkout could not be reserved. Refresh to resume any existing payment; do not start another payment." }, { status: 409 });
+  }
   const callbackUrl = new URL("/dashboard/payment/callback", request.url);
   callbackUrl.searchParams.set("provider", "paystack");
-  const response = await fetch("https://api.paystack.co/transaction/initialize", { method: "POST", headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify({ email: order.user.email, amount: Math.round(order.totalAmount * 100), currency: "NGN", reference, callback_url: callbackUrl.toString(), metadata: { orderId: order.id, customerName: order.user.name || undefined, phone: order.user.phone || undefined } }) });
-  const result = await response.json();
+  let response: Response;
+  let result;
+  try {
+    response = await fetch("https://api.paystack.co/transaction/initialize", { method: "POST", signal: AbortSignal.timeout(15000), headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify({ email: order.user.email, amount: Math.round(order.totalAmount * 100), currency: "NGN", reference, callback_url: callbackUrl.toString(), metadata: { orderId: order.id, customerName: order.user.name || undefined, phone: order.user.phone || undefined } }) });
+    result = await response.json();
+  } catch {
+    return NextResponse.json({ error: "Paystack checkout could not be confirmed. Your reference is preserved; contact support before attempting another payment." }, { status: 502 });
+  }
   if (!response.ok || !result.status || !result.data?.authorization_url) return NextResponse.json({ error: result.message || "Unable to start Paystack payment." }, { status: 502 });
-  await prisma.payment.upsert({ where: { orderId: order.id }, create: { orderId: order.id, provider: "PAYSTACK", reference, amount: order.totalAmount, authorizationUrl: result.data.authorization_url }, update: { provider: "PAYSTACK", reference, amount: order.totalAmount, status: "PENDING", authorizationUrl: result.data.authorization_url, verifiedAt: null } });
+  const saved = await prisma.payment.updateMany({ where: { orderId: order.id, provider: "PAYSTACK", reference, status: "PENDING", order: { status: "PENDING" } }, data: { authorizationUrl: result.data.authorization_url } });
+  if (!saved.count) return NextResponse.json({ error: "The order or payment changed. Refresh your orders before continuing." }, { status: 409 });
   return NextResponse.json({ authorizationUrl: result.data.authorization_url });
 }
