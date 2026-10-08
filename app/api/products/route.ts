@@ -111,6 +111,7 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const validated = productSchema.parse(body);
+    if (validated.images.length > 8) return NextResponse.json({ error: "New listings allow up to 8 images. Activate a Premium Listing, then edit to add up to 15." }, { status: 400 });
 
     const slug = validated.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
 

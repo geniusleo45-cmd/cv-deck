@@ -66,6 +66,14 @@ export async function PUT(
 
     const body = await req.json();
     const validated = productSchema.partial().parse(body);
+    if (validated.images && validated.images.length > 8) {
+      const now = new Date();
+      const premium = await prisma.adCampaign.findFirst({ where: { productId: id, status: "ACTIVE", startsAt: { lte: now }, endsAt: { gt: now } }, select: { id: true } });
+      let previous: string[] = [];
+      try { const parsed = JSON.parse(product.images); if (Array.isArray(parsed)) previous = parsed; } catch {}
+      const retainingExisting = validated.images.length <= previous.length && validated.images.every((image) => previous.includes(image));
+      if (!premium && !retainingExisting) return NextResponse.json({ error: "Standard listings allow 8 images. An active Premium Listing is required to add more, up to 15." }, { status: 400 });
+    }
 
     const updatedProduct = await prisma.product.update({
       where: { id },

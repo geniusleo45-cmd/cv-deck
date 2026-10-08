@@ -5,12 +5,12 @@ import { ChangeEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImagePlus, Trash2 } from "lucide-react";
 
-const MAX_IMAGES = 3;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 type UploadSignature = { cloudName: string; apiKey: string; timestamp: number; signature: string; folder: string };
-type Product = { id: string; name: string; price: number; stock: number; status: string; images: string[] };
+type Product = { id: string; name: string; price: number; stock: number; status: string; images: string[]; premium: boolean };
 
 export function ProductEditor({ product }: { product: Product }) {
+  const MAX_IMAGES = product.premium ? 15 : 8;
   const router = useRouter();
   const [images, setImages] = useState(product.images);
   const [error, setError] = useState("");

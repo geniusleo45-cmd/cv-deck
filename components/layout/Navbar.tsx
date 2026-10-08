@@ -8,7 +8,7 @@ import { CartSheet } from "@/components/cart/CartSheet";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { MessageIndicator } from "@/components/messaging/MessageIndicator";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AccountMenu } from "./AccountMenu";
 import { Bell, Laptop, LogOut, Briefcase, Store, Menu, LayoutDashboard, Package, UserRound } from "lucide-react";
 
 export function Navbar() {
@@ -102,20 +102,7 @@ export function Navbar() {
           {session ? (
             <>
               <NotificationBell />
-              <Button
-                variant="ghost"
-                className="relative hidden h-9 w-9 rounded-full sm:inline-flex"
-                asChild
-              >
-                <Link href="/dashboard/profile" aria-label="Open profile settings">
-                  <Avatar className="h-9 w-9 border border-gray-200">
-                    <AvatarImage src={user?.image || ""} alt={user?.name || "User"} />
-                    <AvatarFallback className="bg-blue-600 text-white font-bold text-xs">
-                      {user?.name ? user.name.slice(0, 2).toUpperCase() : "CV"}
-                    </AvatarFallback>
-                  </Avatar>
-                </Link>
-              </Button>
+              <AccountMenu />
               <Button
                 variant="ghost"
                 size="icon"

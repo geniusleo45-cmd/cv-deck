@@ -8,7 +8,9 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const { id } = await params;
   const product = await prisma.product.findFirst({ where: { id, vendor: { userId: user.id } }, select: { id: true, name: true, price: true, stock: true, status: true, images: true } });
   if (!product) notFound();
+  const now = new Date();
+  const premium = Boolean(await prisma.adCampaign.findFirst({ where: { productId: id, status: "ACTIVE", startsAt: { lte: now }, endsAt: { gt: now } }, select: { id: true } }));
   let images: string[] = [];
   try { const parsed = JSON.parse(product.images); if (Array.isArray(parsed)) images = parsed.filter((image): image is string => typeof image === "string"); } catch {}
-  return <section className="space-y-6"><div><h1 className="text-2xl font-black">Edit product</h1><p className="text-sm text-gray-500">Update this inventory listing.</p></div><ProductEditor product={{ ...product, images }} /></section>;
+  return <section className="space-y-6"><div><h1 className="text-2xl font-black">Edit product</h1><p className="text-sm text-gray-500">Standard listings allow 8 images; active Premium Listings allow 15. Existing images are retained after expiry.</p></div><ProductEditor product={{ ...product, images, premium }} /></section>;
 }

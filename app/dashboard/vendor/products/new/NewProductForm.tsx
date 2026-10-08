@@ -7,7 +7,7 @@ import { ImagePlus, Plus, Trash2 } from "lucide-react";
 
 type Specification = { key: string; value: string };
 
-const MAX_IMAGES = 3;
+const MAX_IMAGES = 8;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
 type UploadSignature = {

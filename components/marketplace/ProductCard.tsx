@@ -63,6 +63,7 @@ export function ProductCard({ product, compact = false, mobileCompact = false, s
   const [adding, setAdding] = useState(false);
   const [saved, setSaved] = useState((product.wishlistItems?.length ?? 0) > 0);
   const [saving, setSaving] = useState(false);
+  const galleryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!sponsored || !sponsoredCampaignId || hasTrackedImpression.current) return;
@@ -79,9 +80,11 @@ export function ProductCard({ product, compact = false, mobileCompact = false, s
   }, [sponsored, sponsoredCampaignId]);
 
   let imageUrl = "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=600&q=80";
+  let galleryImages: string[] = [];
   try {
     const parsed = JSON.parse(product.images);
-    if (Array.isArray(parsed) && parsed.length > 0) imageUrl = parsed[0];
+    if (Array.isArray(parsed)) galleryImages = parsed.filter((value): value is string => typeof value === "string" && value.length > 0);
+    if (galleryImages.length) imageUrl = galleryImages[0];
   } catch (e) {
     // fallback
   }
@@ -155,13 +158,15 @@ export function ProductCard({ product, compact = false, mobileCompact = false, s
     <div ref={cardRef} className={`group flex overflow-hidden rounded-2xl border bg-white shadow-sm transition-all duration-200 hover:shadow-lg dark:bg-gray-900 ${sponsored ? "border-amber-300 ring-1 ring-amber-100 dark:border-amber-700 dark:ring-amber-950" : ""} ${compact ? "flex-row" : mobileCompact ? "flex-row sm:flex-col" : "flex-col"}`}>
       {/* Product Image Header */}
       <div className={`relative shrink-0 overflow-hidden bg-gray-100 dark:bg-gray-800 ${compact ? "h-28 w-28 sm:h-32 sm:w-40" : mobileCompact ? "h-28 w-28 sm:aspect-[4/3] sm:h-auto sm:w-full" : "aspect-[4/3] w-full"}`}>
-        <Image
-          src={imageUrl}
-          alt={product.name}
-          fill
-          sizes={compact ? "(max-width: 640px) 112px, 160px" : mobileCompact ? "(max-width: 640px) 112px, (max-width: 1280px) 50vw, 33vw" : "(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"}
-          className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
-        />
+        <div ref={galleryRef} tabIndex={0} aria-label={`${product.name} image gallery; scroll horizontally for more images`} className="absolute inset-0 flex snap-x snap-mandatory overflow-x-auto">
+          {(galleryImages.length ? galleryImages : [imageUrl]).map((src, index) => <div key={`${src}-${index}`} className="relative h-full w-full shrink-0 snap-center">
+            <Image src={src} alt={`${product.name}, image ${index + 1}`} fill sizes={compact || mobileCompact ? "(max-width: 640px) 112px, 33vw" : "(max-width: 640px) 100vw, 33vw"} className="object-cover" />
+          </div>)}
+        </div>
+        {galleryImages.length > 1 && <div className="pointer-events-none absolute inset-x-1 top-1/2 flex -translate-y-1/2 justify-between">
+          <button type="button" aria-label={`Previous image of ${product.name}`} onClick={() => galleryRef.current?.scrollBy({ left: -galleryRef.current.clientWidth, behavior: "smooth" })} className="pointer-events-auto rounded-full bg-white/90 px-2 py-1 text-black shadow">‹</button>
+          <button type="button" aria-label={`Next image of ${product.name}`} onClick={() => galleryRef.current?.scrollBy({ left: galleryRef.current.clientWidth, behavior: "smooth" })} className="pointer-events-auto rounded-full bg-white/90 px-2 py-1 text-black shadow">›</button>
+        </div>}
         <div className={`absolute left-2 top-2 flex flex-wrap gap-1 ${compact ? "max-w-[70px]" : mobileCompact ? "max-w-[70px] sm:left-3 sm:top-3 sm:max-w-none sm:gap-1.5" : "left-3 top-3 gap-1.5"}`}>
           <Badge className={`font-bold text-[10px] uppercase px-2 py-0.5 ${getConditionColor(product.condition)}`}>
             {product.condition}
