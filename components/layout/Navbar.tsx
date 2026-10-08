@@ -125,6 +125,12 @@ export function Navbar() {
           )}
         </div>
       </div>
+      <div className="container mx-auto px-4 pb-2 sm:px-6">
+        <form action="/dashboard/search" role="search" className="mx-auto flex max-w-2xl gap-2">
+          <input type="search" name="query" aria-label="Search CV Deck" placeholder="Search products, vendors, recruiters, technicians…" minLength={2} maxLength={100} required className="min-w-0 flex-1 rounded-lg border bg-gray-50 px-3 py-1.5 text-sm dark:bg-gray-900" />
+          <button type="submit" className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white">Search</button>
+        </form>
+      </div>
     </header>
   );
 }
