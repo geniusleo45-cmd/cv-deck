@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
+import { CheckPaymentButton } from "./CheckPaymentButton";
 
 export default async function PaymentReviewPage() {
   await requireAdmin();
@@ -36,6 +37,7 @@ export default async function PaymentReviewPage() {
         <p>Order: {payment.order.status} · Payment: {payment.status} (not verified)</p>
         <p className="break-all">Reference: {payment.reference}</p>
         <p>Created: {payment.createdAt.toISOString()}</p>
+        <CheckPaymentButton id={payment.id} kind="order" />
         <p className="mt-2 font-semibold">Do not fulfill or reopen a cancelled order. Confirm the provider outcome before taking action.</p>
       </article>)}
       {interruptedCampaigns.map((campaign) => <article key={campaign.id} className="rounded-xl border p-4 text-sm">
@@ -43,6 +45,7 @@ export default async function PaymentReviewPage() {
         <p>{campaign.vendor.businessName} · ₦{campaign.amount.toLocaleString()}</p>
         <p className="break-all">Reference: {campaign.paymentReference}</p>
         <p>Payment not verified; do not activate manually.</p>
+        <CheckPaymentButton id={campaign.id} kind="campaign" />
         <Link href="/dashboard/admin/advertising/payment-support" className="font-bold text-blue-600">Open advertising support</Link>
       </article>)}
     </section>
