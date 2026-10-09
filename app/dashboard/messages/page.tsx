@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/rbac";
 import { ChatWindow } from "@/components/messaging/ChatWindow";
 import { MessageSquare } from "lucide-react";
+import { prisma } from "@/lib/prisma";
 
 export default async function MessagesPage({
   searchParams,
@@ -8,7 +9,8 @@ export default async function MessagesPage({
   searchParams: Promise<{ receiverId?: string; conversationId?: string }>;
 }) {
   const { receiverId, conversationId } = await searchParams;
-  await getCurrentUser();
+  const user = await getCurrentUser();
+  const recipient = user && receiverId ? await prisma.user.findUnique({ where: { id: receiverId }, select: { id: true, name: true, avatar: true, role: true } }) : null;
 
   return (
     <div className="space-y-6">
@@ -21,7 +23,7 @@ export default async function MessagesPage({
         </p>
       </div>
 
-      <ChatWindow initialReceiverId={receiverId} initialConversationId={conversationId} />
+      <ChatWindow initialReceiverId={receiverId} initialConversationId={conversationId} initialParticipant={recipient} />
     </div>
   );
 }

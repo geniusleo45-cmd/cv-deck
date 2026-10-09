@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Send, User, MessageSquare, RefreshCw, Search, Store, Briefcase, Users, ArrowLeft } from "lucide-react";
 
-interface ChatUser { id: string; name: string; avatar?: string | null; role: string; }
+interface ChatUser { id: string; name: string | null; avatar?: string | null; role: string; }
 interface Message {
   id: string;
   senderId: string;
@@ -26,7 +26,7 @@ interface Conversation {
 }
 interface Contact { id: string; name: string | null; email: string; role: string; avatar?: string | null; vendorProfile?: { businessName: string } | null; recruiterProfile?: { companyName: string; industry?: string | null } | null; }
 
-export function ChatWindow({ initialReceiverId, initialConversationId }: { initialReceiverId?: string; initialConversationId?: string }) {
+export function ChatWindow({ initialReceiverId, initialConversationId, initialParticipant }: { initialReceiverId?: string; initialConversationId?: string; initialParticipant?: ChatUser | null }) {
   const { data: session } = useSession();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -149,12 +149,12 @@ export function ChatWindow({ initialReceiverId, initialConversationId }: { initi
   const activeMessage = selectedConversation?.messages[0];
   const activeParticipant = activeMessage
     ? activeMessage.senderId === session?.user?.id ? activeMessage.receiver : activeMessage.sender
-    : newRecipient;
+    : newRecipient || initialParticipant;
 
   return (
-    <div className="flex h-[calc(100dvh-10rem)] min-h-[520px] w-full overflow-hidden rounded-2xl border bg-white shadow-sm dark:bg-gray-900 md:h-[600px]">
+    <div className="flex h-[calc(100dvh-16rem)] min-h-[280px] max-h-[720px] min-w-0 w-full overflow-hidden rounded-2xl border bg-white shadow-sm dark:bg-gray-900 md:h-[calc(100dvh-14rem)]">
       {/* Left List of Conversations */}
-      <div className={`${mobileThreadOpen ? "hidden" : "flex"} w-full flex-col border-r bg-gray-50/50 dark:bg-gray-900/50 md:flex md:w-1/3`}>
+      <div className={`${mobileThreadOpen ? "hidden" : "flex"} min-h-0 min-w-0 w-full flex-col border-r bg-gray-50/50 dark:bg-gray-900/50 md:flex md:w-1/3 md:max-w-xs md:shrink-0`}>
         <div className="p-4 border-b flex items-center justify-between">
           <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <MessageSquare className="h-4 w-4 text-blue-600" /> Messages
@@ -206,25 +206,25 @@ export function ChatWindow({ initialReceiverId, initialConversationId }: { initi
       </div>
 
       {/* Right Chat Thread View */}
-      <div className={`${mobileThreadOpen ? "flex" : "hidden"} w-full flex-1 flex-col justify-between bg-white dark:bg-gray-900 md:flex`}>
+      <div className={`${mobileThreadOpen ? "flex" : "hidden"} min-h-0 min-w-0 w-full flex-1 flex-col justify-between bg-white dark:bg-gray-900 md:flex`}>
         {selectedConversation || newRecipient || initialReceiverId ? (
           <>
             {/* Thread Header */}
             <div className="p-4 border-b flex items-center justify-between bg-gray-50/30 dark:bg-gray-900/30">
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <Button type="button" variant="ghost" size="icon" onClick={() => setMobileThreadOpen(false)} className="h-8 w-8 md:hidden" aria-label="Back to conversations"><ArrowLeft className="h-4 w-4" /></Button>
-                <Avatar className="h-9 w-9"><AvatarImage src={activeParticipant?.avatar || ""} alt={activeParticipant?.name || "Conversation"} /><AvatarFallback className="bg-blue-600 text-xs font-bold text-white">{activeParticipant?.name?.slice(0, 2).toUpperCase() || <User className="h-4 w-4" />}</AvatarFallback></Avatar>
-                <div>
-                  <h4 className="text-sm font-bold text-gray-900 dark:text-white">
+                <Avatar className="h-9 w-9 shrink-0"><AvatarImage src={activeParticipant?.avatar || ""} alt={activeParticipant?.name || "Conversation"} /><AvatarFallback className="bg-blue-600 text-xs font-bold text-white">{activeParticipant?.name?.slice(0, 2).toUpperCase() || <User className="h-4 w-4" />}</AvatarFallback></Avatar>
+                <div className="min-w-0">
+                  <h4 className="truncate text-sm font-bold text-gray-900 dark:text-white">
                     {activeParticipant?.name || selectedConversation?.subject || "New conversation"}
                   </h4>
-                  <span className="text-[11px] text-gray-500">{newRecipient ? `${newRecipient.role.toLowerCase()} · ${newRecipient.vendorProfile?.businessName || newRecipient.recruiterProfile?.companyName || newRecipient.email}` : "Direct message"}</span>
+                  <span className="block truncate text-[11px] text-gray-500">{newRecipient ? `${newRecipient.role.toLowerCase()} · ${newRecipient.vendorProfile?.businessName || newRecipient.recruiterProfile?.companyName || newRecipient.email}` : "Direct message"}</span>
                 </div>
               </div>
             </div>
 
             {/* Message Bubble List */}
-            <div className="flex-1 p-4 overflow-y-auto space-y-3">
+            <div className="min-h-0 min-w-0 flex-1 p-2 sm:p-4 overflow-y-auto overflow-x-hidden space-y-3">
               {selectedConversation ? messages.map((msg) => {
                 const isMe = msg.senderId === session?.user?.id;
                 return (
@@ -232,8 +232,9 @@ export function ChatWindow({ initialReceiverId, initialConversationId }: { initi
                     key={msg.id}
                     className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}
                   >
+                    <Avatar className="mb-1 h-6 w-6 shrink-0"><AvatarImage src={msg.sender?.avatar || (isMe ? session?.user?.image || "" : "")} alt={msg.sender?.name || "Sender"} /><AvatarFallback className="text-[9px]">{msg.sender?.name?.slice(0, 2).toUpperCase() || "CV"}</AvatarFallback></Avatar>
                     <div
-                      className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-xs sm:text-sm shadow-sm ${
+                      className={`min-w-0 max-w-[90%] sm:max-w-[75%] whitespace-pre-wrap [overflow-wrap:anywhere] rounded-2xl px-3 sm:px-4 py-2.5 text-xs sm:text-sm shadow-sm ${
                         isMe
                           ? "bg-blue-600 text-white rounded-br-none"
                           : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-none"
@@ -250,14 +251,14 @@ export function ChatWindow({ initialReceiverId, initialConversationId }: { initi
             </div>
 
             {/* Message Input Box */}
-            <form onSubmit={handleSend} className="p-3 border-t flex items-center gap-2">
+            <form onSubmit={handleSend} className="shrink-0 min-w-0 p-2 sm:p-3 border-t flex items-center gap-2">
               <Input
                 placeholder="Type your message..."
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                className="text-sm rounded-xl"
+                className="min-w-0 flex-1 text-base sm:text-sm rounded-xl"
               />
-              <Button type="submit" disabled={sending || !inputText.trim()} size="icon" className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl">
+              <Button type="submit" aria-label="Send message" disabled={sending || !inputText.trim()} size="icon" className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white rounded-xl">
                 <Send className="h-4 w-4" />
               </Button>
             </form>

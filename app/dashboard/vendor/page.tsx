@@ -177,9 +177,9 @@ export default async function VendorDashboardPage() {
       </section>
 
       {/* Inventory Management Table */}
-      <div className="rounded-2xl border bg-white dark:bg-gray-900 p-6 shadow-sm space-y-4">
+      <div className="min-w-0 max-w-full rounded-2xl border bg-white dark:bg-gray-900 p-3 sm:p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <h2 className="min-w-0 text-sm sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Package className="h-5 w-5 text-blue-600" /> Inventory & Stock Manager
           </h2>
         </div>
@@ -190,7 +190,7 @@ export default async function VendorDashboardPage() {
             <p className="text-sm font-medium text-gray-500">You haven&apos;t listed any products yet.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="min-w-0 max-w-full overflow-x-auto">
             <table className="w-full text-left text-xs text-gray-700 dark:text-gray-300">
               <thead className="bg-gray-50 dark:bg-gray-800 uppercase text-[11px] font-bold text-gray-500">
                 <tr>
@@ -205,7 +205,7 @@ export default async function VendorDashboardPage() {
               <tbody className="divide-y">
                 {vendor.products.map((prod) => (
                   <tr key={prod.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
-                    <td className="p-3 font-bold text-gray-900 dark:text-white">{prod.name}</td>
+                    <td className="p-2 sm:p-3 font-bold text-gray-900 dark:text-white"><Link href={`/dashboard/vendor/products/${prod.id}`} className="block w-28 break-words [overflow-wrap:anywhere] text-xs leading-snug sm:w-48 sm:text-sm">{prod.name}</Link></td>
                     <td className="p-3">{prod.category?.name || "General"}</td>
                     <td className="p-3">
                       <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-blue-100 text-blue-800">
