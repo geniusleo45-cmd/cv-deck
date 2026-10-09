@@ -440,6 +440,23 @@ model Dispute {
   @@index([userId])
 }
 
+// Append-only manual review log; deliberately independent of payment state.
+model PaymentReviewEntry {
+  id                String   @id
+  kind              String
+  targetId          String
+  paymentReference  String
+  status            String
+  note              String
+  externalReference String?
+  adminId           String
+  adminName         String
+  createdAt         DateTime @default(now())
+
+  @@index([kind, targetId, createdAt])
+  @@index([createdAt])
+}
+
 model VendorVerification {
   id           String             @id @default(cuid())
   vendorId     String
