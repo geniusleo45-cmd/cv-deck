@@ -163,7 +163,26 @@ export default async function VendorDashboardPage() {
         </div>
       </div>
 
-      {lowStockProducts.length > 0 && <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm dark:border-amber-900 dark:bg-amber-950/20"><div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><h2 className="flex items-center gap-2 text-base font-bold text-amber-950 dark:text-amber-100"><AlertTriangle className="h-5 w-5 text-amber-600" /> Inventory needs attention</h2><p className="mt-1 text-xs text-amber-800 dark:text-amber-200">{lowStockProducts.length} active product{lowStockProducts.length === 1 ? " is" : "s are"} low or out of stock.</p></div><Link href="/dashboard/vendor/products" className="text-xs font-bold text-amber-800 hover:underline dark:text-amber-200">View all inventory</Link></div><div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{lowStockProducts.slice(0, 6).map((product) => <Link key={product.id} href={`/dashboard/vendor/products/${product.id}`} className="flex items-center justify-between rounded-xl border border-amber-200 bg-white p-3 text-sm transition hover:border-amber-400 dark:border-amber-900 dark:bg-gray-900"><span className="min-w-0 truncate font-bold text-gray-900 dark:text-white">{product.name}</span><span className={`ml-3 shrink-0 text-xs font-black ${product.stock === 0 ? "text-red-600" : "text-amber-700 dark:text-amber-300"}`}>{product.stock === 0 ? "Out of stock" : `${product.stock} left`}</span></Link>)}</div>{lowStockProducts.length > 6 && <p className="mt-3 text-xs text-amber-800 dark:text-amber-200">Plus {lowStockProducts.length - 6} more item{lowStockProducts.length - 6 === 1 ? "" : "s"} requiring attention.</p>}</section>}
+      {lowStockProducts.length > 0 && (
+        <section className="min-w-0 max-w-full rounded-2xl border border-amber-200 bg-amber-50 p-3 shadow-sm sm:p-5 dark:border-amber-900 dark:bg-amber-950/20">
+          <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <h2 className="flex items-center gap-2 text-sm font-bold text-amber-950 sm:text-base dark:text-amber-100"><AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" /> Inventory needs attention</h2>
+              <p className="mt-1 text-xs text-amber-800 dark:text-amber-200">{lowStockProducts.length} active product{lowStockProducts.length === 1 ? " is" : "s are"} low or out of stock.</p>
+            </div>
+            <Link href="/dashboard/vendor/products" className="shrink-0 text-xs font-bold text-amber-800 hover:underline dark:text-amber-200">View all inventory</Link>
+          </div>
+          <div className="mt-4 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {lowStockProducts.slice(0, 6).map((product) => (
+              <Link key={product.id} href={`/dashboard/vendor/products/${product.id}`} className="grid min-w-0 max-w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-xl border border-amber-200 bg-white p-2.5 text-xs transition hover:border-amber-400 sm:p-3 sm:text-sm dark:border-amber-900 dark:bg-gray-900">
+                <span className="min-w-0 whitespace-normal font-bold text-gray-900 [overflow-wrap:anywhere] dark:text-white">{product.name}</span>
+                <span className={`whitespace-nowrap text-xs font-black ${product.stock === 0 ? "text-red-600" : "text-amber-700 dark:text-amber-300"}`}>{product.stock === 0 ? "Out of stock" : `${product.stock} left`}</span>
+              </Link>
+            ))}
+          </div>
+          {lowStockProducts.length > 6 && <p className="mt-3 text-xs text-amber-800 dark:text-amber-200">Plus {lowStockProducts.length - 6} more item{lowStockProducts.length - 6 === 1 ? "" : "s"} requiring attention.</p>}
+        </section>
+      )}
 
       {/* Paid orders ready for fulfillment */}
       <div className="rounded-2xl border bg-white dark:bg-gray-900 p-6 shadow-sm space-y-4">
