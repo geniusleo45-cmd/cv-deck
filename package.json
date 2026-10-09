@@ -10,7 +10,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:payment-review": "node --test tests/payment-review.test.cjs"
+    "test:payment-review": "node --test tests/payment-review.test.cjs",
+    "test:payments": "node --test tests/payment-review.test.cjs tests/payment-finalization.test.cjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
