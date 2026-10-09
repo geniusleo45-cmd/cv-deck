@@ -1,0 +1,39 @@
+name: Payment safety
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: payment-safety-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  payment-tests:
+    name: Payment regression tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      # These tests mock Prisma and providers; no generated client or native
+      # package install scripts are needed. Never add production secrets here.
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Lint payment tests
+        run: npx --no-install eslint tests/payment-review.test.cjs tests/payment-finalization.test.cjs
+      - name: Run payment regression tests
+        run: npm run test:payments
