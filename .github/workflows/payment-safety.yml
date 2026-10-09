@@ -37,3 +37,35 @@ jobs:
         run: npx --no-install eslint tests/payment-review.test.cjs tests/payment-finalization.test.cjs
       - name: Run payment regression tests
         run: npm run test:payments
+  payment-database:
+    name: PostgreSQL payment concurrency
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: cvdeck_test
+          POSTGRES_PASSWORD: disposable_ci_password
+          POSTGRES_DB: cvdeck_payment_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cvdeck_test -d cvdeck_payment_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://cvdeck_test:disposable_ci_password@127.0.0.1:5432/cvdeck_payment_test
+      DIRECT_URL: postgresql://cvdeck_test:disposable_ci_password@127.0.0.1:5432/cvdeck_payment_test
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx --no-install eslint tests/payment-database.test.cjs tests/run-payment-db.cjs
+      - run: npm run test:payments:database

@@ -24,6 +24,21 @@ automatically prevent direct pushes or Vercel deployments. Requiring the
 “Payment regression tests” status for merges needs a separate repository rule;
 deployment gating needs separate Vercel configuration.
 
-Next verification stage: a dedicated disposable PostgreSQL test database, with
-concurrent callback/cancellation scenarios. Never run destructive test setup
-against the production Neon database.
+## PostgreSQL integration checks
+
+The separate “PostgreSQL payment concurrency” CI job starts a disposable
+PostgreSQL 16 service. `npm run test:payments:database` rejects execution unless
+GitHub Actions is active and both database URLs point to the explicitly named
+loopback test database. No production secrets are supplied.
+
+The runner generates Prisma and applies the current schema to the fresh service
+with `db push` (this does not test the migration chain). Tests execute the real
+payment finalization helper and cancellation route using Prisma; authentication
+and HTTP response construction are stubbed, not provider verification.
+
+Checks cover simultaneous confirmations, cancellation-first, payment-first,
+and five overlapping cancellation/payment attempts. They assert final order and
+payment states, stock quantities, and buyer/vendor notification counts. The
+overlap tests accept either valid winner; they do not guarantee every possible
+database interleaving. GitHub destroys the service and fixtures after the job.
+Never run test setup against the production Neon database.
