@@ -34,7 +34,7 @@ jobs:
       - name: Install locked dependencies without lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Lint payment tests
-        run: npx --no-install eslint tests/payment-review.test.cjs tests/payment-finalization.test.cjs
+        run: npx --no-install eslint tests/payment-review.test.cjs tests/payment-finalization.test.cjs tests/payment-webhooks.test.cjs
       - name: Run payment regression tests
         run: npm run test:payments
   payment-database:

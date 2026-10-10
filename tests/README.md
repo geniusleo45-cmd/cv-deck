@@ -19,6 +19,15 @@ simulated by the test double, not verified against PostgreSQL.
 These are unit tests, not real database concurrency tests, provider integration
 tests, UI tests, or a production build. No real charge or refund is created.
 
+Webhook unit tests exercise both provider handlers with mocked verification
+responses: invalid signatures, underpayment, wrong currency/reference, failed
+payments, HTTP/API errors, network exceptions, duplicate order confirmations,
+and successful order/campaign dispatch. They use fixture-only keys injected
+into the loaded module, not local environment secrets. Network exceptions are
+asserted to propagate; the HTTP framework error response is not tested here.
+Flutterwave coverage follows the existing `verif-hash` handler and does not
+resolve or validate the separate hosted-checkout issue.
+
 Check results under GitHub Actions → Payment safety. A failing check does not
 automatically prevent direct pushes or Vercel deployments. Requiring the
 “Payment regression tests” status for merges needs a separate repository rule;

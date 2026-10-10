@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:payment-review": "node --test tests/payment-review.test.cjs",
-    "test:payments": "node --test tests/payment-review.test.cjs tests/payment-finalization.test.cjs",
+    "test:payments": "node --test tests/payment-review.test.cjs tests/payment-finalization.test.cjs tests/payment-webhooks.test.cjs",
     "test:payments:database": "node tests/run-payment-db.cjs"
   },
   "dependencies": {
