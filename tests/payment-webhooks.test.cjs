@@ -16,22 +16,37 @@ function fixture(provider, options = {}) {
   };
   const source = ts.transpileModule(readFileSync(join(__dirname, `../app/api/webhooks/${provider}/route.ts`), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const exports = {};
-  new Function('require', 'exports', 'process', 'fetch', source)((name) => {
+  new Function('require', 'exports', 'process', 'fetch', 'AbortSignal', source)((name) => {
+    if (name === 'zod') return require('zod');
     if (name === 'crypto') return crypto;
     if (name === 'next/server') return { NextResponse: { json: (body, init) => Response.json(body, init) } };
     if (name === '@/lib/prisma') return { prisma };
     if (name === '@/lib/orderNotifications') return { completeVerifiedOrderPayment: async () => { calls.finalized++; return 'processed'; } };
     if (name === '@/lib/adCampaignNotifications') return { activateVerifiedPremiumListing: async () => { calls.activated++; } };
     throw new Error(`Unexpected import ${name}`);
-  }, exports, { env: { PAYSTACK_SECRET_KEY: secret, FLW_WEBHOOK_SECRET_HASH: secret, FLW_SECRET_KEY: secret } }, async () => {
+  }, exports, { env: { PAYSTACK_SECRET_KEY: secret, FLW_WEBHOOK_SECRET_HASH: secret, FLW_SECRET_KEY: secret } }, async (_url, init) => {
     calls.fetches++;
+    assert.equal(init.cache, 'no-store');
+    assert.ok(init.signal instanceof AbortSignal);
+    if (options.timeout) {
+      await new Promise((resolve, reject) => {
+        if (init.signal.aborted) return reject(init.signal.reason);
+        init.signal.addEventListener('abort', () => reject(init.signal.reason), { once: true });
+      });
+    }
     if (options.networkError) throw new Error('Provider unreachable');
+    if (options.invalidJson) return new Response('not JSON');
     const data = provider === 'paystack'
       ? { status: 'success', reference: 'ref-1', currency: 'NGN', amount: 10000 }
       : { status: 'successful', tx_ref: 'ref-1', currency: 'NGN', amount: 100 };
     return Response.json({ status: options.providerFailure ? false : provider === 'paystack' ? true : 'success', data: { ...data, ...options.data } }, { status: options.httpStatus || 200 });
-  });
-  const body = JSON.stringify(provider === 'paystack' ? { event: 'charge.success', data: { reference: 'ref-1' } } : { event: 'charge.completed', data: { id: 123, tx_ref: 'ref-1', status: 'successful' } });
+  }, { timeout: (milliseconds) => {
+    assert.equal(milliseconds, 15000);
+    const controller = new AbortController();
+    if (options.timeout) setTimeout(() => controller.abort(new DOMException('Timed out', 'TimeoutError')), 5);
+    return controller.signal;
+  } });
+  const body = options.rawBody ?? JSON.stringify(provider === 'paystack' ? { event: 'charge.success', data: { reference: 'ref-1' } } : { event: 'charge.completed', data: { id: 123, tx_ref: 'ref-1', status: 'successful' } });
   return {
     calls,
     post: (invalidSignature = false) => exports.POST(new Request('https://example.test/webhook', {
@@ -68,9 +83,26 @@ for (const provider of ['paystack', 'flutterwave']) {
       }
     }
   });
-  test(`${provider}: network failure propagates without finalizing`, async () => {
-    const f = fixture(provider, { networkError: true }); await assert.rejects(f.post(), /Provider unreachable/);
-    assert.equal(f.calls.finalized + f.calls.activated, 0);
+  test(`${provider}: network, timeout and invalid provider JSON return 503`, async () => {
+    for (const campaign of [false, true]) for (const failure of [{ networkError: true }, { timeout: true }, { invalidJson: true }]) {
+      const f = fixture(provider, { campaign, ...failure }); assert.equal((await f.post()).status, 503);
+      assert.equal(f.calls.finalized + f.calls.activated, 0);
+    }
+  });
+  test(`${provider}: signed malformed payloads rejected before database access`, async () => {
+    for (const rawBody of ['{', 'null', '[]', '{"event":42}', '{"event":"charge.success","data":{"reference":123}}', '{"event":"charge.completed","data":{"tx_ref":{}}}']) {
+      // Each provider validates its own reference field.
+      if (provider === 'flutterwave' && rawBody.includes('reference')) continue;
+      if (provider === 'paystack' && rawBody.includes('tx_ref')) continue;
+      const f = fixture(provider, { rawBody }); assert.equal((await f.post()).status, 400);
+      assert.equal(f.calls.lookups + f.calls.fetches + f.calls.finalized + f.calls.activated, 0);
+    }
+  });
+  test(`${provider}: numeric strings cannot confirm a payment`, async () => {
+    for (const campaign of [false, true]) {
+      const f = fixture(provider, { campaign, data: { amount: '10000' } }); assert.equal((await f.post()).status, 200);
+      assert.equal(f.calls.finalized + f.calls.activated, 0);
+    }
   });
   test(`${provider}: already successful payment skips verification and finalization`, async () => {
     const f = fixture(provider, { duplicate: true }); assert.equal((await f.post()).status, 200);

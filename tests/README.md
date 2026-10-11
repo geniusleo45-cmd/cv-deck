@@ -23,8 +23,11 @@ Webhook unit tests exercise both provider handlers with mocked verification
 responses: invalid signatures, underpayment, wrong currency/reference, failed
 payments, HTTP/API errors, network exceptions, duplicate order confirmations,
 and successful order/campaign dispatch. They use fixture-only keys injected
-into the loaded module, not local environment secrets. Network exceptions are
-asserted to propagate; the HTTP framework error response is not tested here.
+into the loaded module, not local environment secrets. Network exceptions,
+invalid provider JSON and timeouts must return 503 without finalization.
+Timeout tests assert the 15-second deadline configuration, then accelerate the
+abort signal to keep the test fast. Malformed signed payloads must return 400
+before database access; string-valued amounts cannot confirm payment.
 Flutterwave coverage follows the existing `verif-hash` handler and does not
 resolve or validate the separate hosted-checkout issue.
 

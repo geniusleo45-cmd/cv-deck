@@ -1,18 +1,13 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { activateVerifiedPremiumListing } from "@/lib/adCampaignNotifications";
 import { prisma } from "@/lib/prisma";
 import { completeVerifiedOrderPayment } from "@/lib/orderNotifications";
 
-type FlutterwaveWebhook = {
-  event?: string;
-  data?: {
-    id?: number | string;
-    tx_ref?: string;
-    status?: string;
-    amount?: number;
-    currency?: string;
-  };
-};
+const webhookSchema = z.object({ event: z.string(), data: z.object({
+  id: z.union([z.number().int().positive(), z.string().regex(/^\d+$/).max(100)]).optional(),
+  tx_ref: z.string().min(1).max(500).optional(), status: z.string().optional(),
+}).optional() });
 
 export async function POST(request: Request) {
   const secretHash = process.env.FLW_WEBHOOK_SECRET_HASH;
@@ -22,15 +17,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid webhook signature." }, { status: 401 });
   }
 
-  const payload = await request.json().catch(() => null) as FlutterwaveWebhook | null;
+  const parsed = webhookSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: "Invalid webhook payload." }, { status: 400 });
+  const payload = parsed.data;
   const reference = payload?.data?.tx_ref;
   const transactionId = payload?.data?.id;
 
   // Acknowledge unrelated events and incomplete payment notifications quickly.
-  if (!reference || !transactionId || payload.data?.status !== "successful") {
+  if (payload.event !== "charge.completed" || !reference || !transactionId || payload.data?.status !== "successful") {
     return NextResponse.json({ received: true });
   }
 
+  try {
   const payment = await prisma.payment.findFirst({
     where: { reference, provider: "FLUTTERWAVE" },
     include: { order: { select: { status: true } } },
@@ -53,7 +51,7 @@ export async function POST(request: Request) {
 
   const verificationResponse = await fetch(
     `https://api.flutterwave.com/v3/transactions/${encodeURIComponent(String(transactionId))}/verify`,
-    { headers: { Authorization: `Bearer ${process.env.FLW_SECRET_KEY}` } }
+    { headers: { Authorization: `Bearer ${process.env.FLW_SECRET_KEY}` }, cache: "no-store", signal: AbortSignal.timeout(15000) }
   );
   if (!verificationResponse.ok) return NextResponse.json({ error: "Payment verification temporarily unavailable." }, { status: 503 });
   const verification = await verificationResponse.json();
@@ -63,6 +61,7 @@ export async function POST(request: Request) {
     && verification.data?.status === "successful"
     && verification.data?.tx_ref === reference
     && verification.data?.currency === "NGN"
+    && typeof verification.data?.amount === "number" && Number.isFinite(verification.data.amount)
     && verification.data?.amount >= (payment?.amount ?? campaign!.amount);
 
   if (!isVerified) {
@@ -78,4 +77,7 @@ export async function POST(request: Request) {
   await completeVerifiedOrderPayment(payment.id);
 
   return NextResponse.json({ received: true });
+  } catch {
+    return NextResponse.json({ error: "Payment verification temporarily unavailable." }, { status: 503 });
+  }
 }
