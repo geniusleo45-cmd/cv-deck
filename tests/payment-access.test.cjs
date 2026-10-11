@@ -14,7 +14,7 @@ function load(path, user, prisma) {
     if (name === '@/lib/auth') return { authOptions: {} };
     if (name === '@/lib/prisma') return { prisma };
     if (name === 'zod') return require('zod');
-    if (name === '@/lib/validations/order') return {};
+    if (name === '@/lib/validations/order') return load('lib/validations/order.ts', user, prisma);
     if (name === '@/lib/orderNotifications') return { completeVerifiedOrderPayment: () => assert.fail('Unauthorized finalization') };
     throw new Error(`Unexpected import ${name}`);
   }, exports, { env: { PAYSTACK_SECRET_KEY: 'fixture-key', FLW_SECRET_KEY: 'fixture-key' } }, () => assert.fail('Unauthorized provider request'));
@@ -61,3 +61,29 @@ test('order details allow the authenticated owner', async () => {
   const response = await route.GET(new Request('https://example.test/order'), { params: Promise.resolve({ id: 'own-order' }) });
   assert.equal(response.status, 200); assert.deepEqual(await response.json(), order);
 });
+
+for (const role of ['VENDOR', 'ADMIN']) {
+  test(`${role}: order update returns only safe fields and still notifies customer`, async () => {
+    let notified = false;
+    let selected = false;
+    const route = load('app/api/orders/[id]/route.ts', { id: 'seller', role }, {
+      vendor: { findUnique: async () => ({ id: 'vendor-1' }) },
+      order: {
+        findUnique: async () => ({ id: 'order-1', status: 'PROCESSING', orderNumber: '12345678', items: [{ product: { vendorId: 'vendor-1' } }] }),
+        update: async ({ select, include }) => {
+          assert.equal(include, undefined);
+          assert.deepEqual(select, { id: true, userId: true, orderNumber: true, status: true, trackingReference: true });
+          selected = true;
+          // Extra sensitive fields prove the response whitelist is independent
+          // of Prisma's selection, protecting against future query expansion.
+          return { id: 'order-1', userId: 'buyer', orderNumber: '12345678', status: 'SHIPPED', trackingReference: 'CVD-test', shippingAddress: 'private', user: { password: 'hash', email: 'private@example.test', phone: 'private' } };
+        },
+      },
+      notification: { create: async ({ data }) => { assert.equal(data.userId, 'buyer'); assert.match(data.message, /CVD-test/); notified = true; } },
+    });
+    const response = await route.PUT(new Request('https://example.test/order', { method: 'PUT', body: JSON.stringify({ status: 'SHIPPED' }) }), { params: Promise.resolve({ id: 'order-1' }) });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { id: 'order-1', orderNumber: '12345678', status: 'SHIPPED', trackingReference: 'CVD-test' });
+    assert.equal(selected && notified, true);
+  });
+}

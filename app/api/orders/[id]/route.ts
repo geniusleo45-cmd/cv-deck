@@ -86,7 +86,8 @@ export async function PUT(
     const updatedOrder = await prisma.order.update({
       where: { id },
       data: { status: validated.status, trackingReference: generatedTrackingReference },
-      include: { user: true },
+      // Only retrieve fields required for the notification and safe response.
+      select: { id: true, userId: true, orderNumber: true, status: true, trackingReference: true },
     });
 
     // Notify customer about order status change
@@ -100,7 +101,12 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json(updatedOrder);
+    return NextResponse.json({
+      id: updatedOrder.id,
+      orderNumber: updatedOrder.orderNumber,
+      status: updatedOrder.status,
+      trackingReference: updatedOrder.trackingReference,
+    });
   } catch (error: any) {
     if (error.name === "ZodError") {
       return NextResponse.json({ error: error.errors[0].message }, { status: 400 });

@@ -45,10 +45,11 @@ without provider calls or writes. Order detail tests cover an unrelated customer
 and the owner. This is not an exhaustive authorization audit or a real-session
 end-to-end test.
 
-Follow-up found during inspection: the order-status PUT handler includes the
-full User relation in its response. Replace that with an explicit safe response
-selection and test that password hashes and unrelated profile fields are never
-returned. Vendor/admin response minimization remains unverified by these tests.
+The order-status PUT handler now selects only notification/response fields and
+returns an explicit four-field response (id, orderNumber, status and trackingReference).
+Vendor/admin regression tests assert that password hashes, User relations,
+contact information and shipping addresses are excluded, while customer
+notifications still work. Other vendor/admin endpoints are outside this audit.
 
 ## PostgreSQL integration checks
 
