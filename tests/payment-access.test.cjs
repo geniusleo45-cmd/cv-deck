@@ -87,3 +87,35 @@ for (const role of ['VENDOR', 'ADMIN']) {
     assert.equal(selected && notified, true);
   });
 }
+
+for (const role of ['CUSTOMER', 'VENDOR', 'ADMIN']) {
+  test(`${role}: order detail query excludes private vendor and payment fields`, async () => {
+    let checked = false;
+    const route = load('app/api/orders/[id]/route.ts', { id: role === 'CUSTOMER' ? 'buyer' : 'staff', role }, {
+      vendor: { findUnique: async () => ({ id: 'vendor-1' }) },
+      order: { findUnique: async ({ select, include }) => {
+        assert.equal(include, undefined);
+        assert.deepEqual(select.user, { select: { name: true, email: true, phone: true } });
+        assert.deepEqual(select.items.select.product.select.vendor, { select: { id: true, businessName: true } });
+        assert.deepEqual(select.payment, { select: { provider: true, status: true, amount: true, verifiedAt: true } });
+        assert.equal(select.items.select.adCampaignId, undefined);
+        checked = true;
+        return { userId: 'buyer', items: [{ product: { vendorId: 'vendor-1', vendor: { id: 'vendor-1', businessName: 'Public shop' } } }], payment: { provider: 'PAYSTACK', status: 'SUCCESS', amount: 100, verifiedAt: null } };
+      } },
+    });
+    const response = await route.GET(new Request('https://example.test/order'), { params: Promise.resolve({ id: 'order-1' }) });
+    assert.equal(response.status, 200); assert.equal(checked, true);
+    const body = await response.json();
+    assert.deepEqual(Object.keys(body.items[0].product.vendor).sort(), ['businessName', 'id']);
+    assert.equal(body.payment.authorizationUrl, undefined); assert.equal(body.payment.reference, undefined);
+  });
+}
+
+test('unrelated vendor cannot read an order', async () => {
+  const route = load('app/api/orders/[id]/route.ts', { id: 'other-seller', role: 'VENDOR' }, {
+    vendor: { findUnique: async () => ({ id: 'other-vendor' }) },
+    order: { findUnique: async () => ({ userId: 'buyer', items: [{ product: { vendorId: 'vendor-1' } }] }) },
+  });
+  const response = await route.GET(new Request('https://example.test/order'), { params: Promise.resolve({ id: 'order-1' }) });
+  assert.equal(response.status, 403); assert.deepEqual(await response.json(), { error: 'Forbidden' });
+});

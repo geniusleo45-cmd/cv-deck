@@ -17,10 +17,19 @@ export async function GET(
 
     const order = await prisma.order.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true, userId: true, orderNumber: true, status: true,
+        totalAmount: true, shippingAddress: true, trackingReference: true,
+        createdAt: true, updatedAt: true,
         user: { select: { name: true, email: true, phone: true } },
-        items: { include: { product: { include: { vendor: true } } } },
-        payment: true,
+        items: { select: {
+          id: true, quantity: true, price: true,
+          product: { select: {
+            id: true, name: true, images: true, vendorId: true,
+            vendor: { select: { id: true, businessName: true } },
+          } },
+        } },
+        payment: { select: { provider: true, status: true, amount: true, verifiedAt: true } },
       },
     });
 
@@ -33,7 +42,7 @@ export async function GET(
     let vendorOwnsOrder = false;
 
     if (sessionUser.role === "VENDOR") {
-      const vendor = await prisma.vendor.findUnique({ where: { userId: sessionUser.id } });
+      const vendor = await prisma.vendor.findUnique({ where: { userId: sessionUser.id }, select: { id: true } });
       vendorOwnsOrder = Boolean(
         vendor &&
           order.items.length > 0 &&

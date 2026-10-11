@@ -51,6 +51,12 @@ Vendor/admin regression tests assert that password hashes, User relations,
 contact information and shipping addresses are excluded, while customer
 notifications still work. Other vendor/admin endpoints are outside this audit.
 
+Order-detail GET uses an explicit selection: vendor id/businessName only, and
+payment provider/status/amount/verifiedAt only. Checkout URLs, payment references,
+vendor bank/identity details and ad attribution fields are excluded. Tests cover
+the selection for customers, permitted vendors and admins, plus unrelated-vendor
+denial. The server-rendered receipt page is separate and unchanged.
+
 ## PostgreSQL integration checks
 
 The separate “PostgreSQL payment concurrency” CI job starts a disposable
