@@ -36,6 +36,20 @@ automatically prevent direct pushes or Vercel deployments. Requiring the
 “Payment regression tests” status for merges needs a separate repository rule;
 deployment gating needs separate Vercel configuration.
 
+## Customer ownership checks
+
+`payment-access.test.cjs` exercises both providers' initialize/verify handlers
+with mocked sessions and Prisma. It asserts that queries use the authenticated
+customer ID, not a supplied userId, and that inaccessible references return
+without provider calls or writes. Order detail tests cover an unrelated customer
+and the owner. This is not an exhaustive authorization audit or a real-session
+end-to-end test.
+
+Follow-up found during inspection: the order-status PUT handler includes the
+full User relation in its response. Replace that with an explicit safe response
+selection and test that password hashes and unrelated profile fields are never
+returned. Vendor/admin response minimization remains unverified by these tests.
+
 ## PostgreSQL integration checks
 
 The separate “PostgreSQL payment concurrency” CI job starts a disposable
