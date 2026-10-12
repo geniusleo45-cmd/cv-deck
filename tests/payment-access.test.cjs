@@ -13,6 +13,7 @@ function load(path, user, prisma) {
     if (name === '@/lib/rbac') return { getCurrentUser: async () => user };
     if (name === '@/lib/auth') return { authOptions: {} };
     if (name === '@/lib/prisma') return { prisma };
+    if (name === '@/lib/premiumListings') return load('lib/premiumListings.ts', user, prisma);
     if (name === 'zod') return require('zod');
     if (name === '@/lib/validations/order') return load('lib/validations/order.ts', user, prisma);
     if (name === '@/lib/orderNotifications') return { completeVerifiedOrderPayment: () => assert.fail('Unauthorized finalization') };
@@ -151,4 +152,29 @@ for (const role of ['CUSTOMER', 'RECRUITER', 'VENDOR', 'ADMIN']) {
 test('vendor without a shop receives no orders', async () => {
   const route = load('app/api/orders/route.ts', { id: 'user-1', role: 'VENDOR' }, { vendor: { findUnique: async () => null } });
   const response = await route.GET(); assert.equal(response.status, 200); assert.deepEqual(await response.json(), []);
+});
+
+test('premium cancellation requires vendor authentication and ownership', async () => {
+  for (const user of [null, { id: 'buyer', role: 'CUSTOMER' }]) {
+    const route = load('app/api/ad-campaigns/route.ts', user, {});
+    assert.equal((await route.DELETE(new Request('https://example.test/ad', { method: 'DELETE', body: '{"id":"campaign"}' }))).status, 403);
+  }
+  const route = load('app/api/ad-campaigns/route.ts', { id: 'seller', role: 'VENDOR' }, {
+    adCampaign: { findFirst: async ({ where }) => { assert.deepEqual(where, { id: 'campaign', vendor: { userId: 'seller' } }); return null; } },
+  });
+  assert.equal((await route.DELETE(new Request('https://example.test/ad', { method: 'DELETE', body: '{"id":"campaign"}' }))).status, 404);
+});
+test('premium cancellation condition preserves reserved checkout references', async () => {
+  for (const count of [0, 1]) {
+    const route = load('app/api/ad-campaigns/route.ts', { id: 'seller', role: 'VENDOR' }, {
+      adCampaign: {
+        findFirst: async () => ({ id: 'campaign', status: 'PENDING_PAYMENT' }),
+        updateMany: async ({ where, data }) => {
+          assert.deepEqual(where, { id: 'campaign', vendor: { userId: 'seller' }, status: 'PENDING_PAYMENT', paymentReference: null, paymentProvider: null, authorizationUrl: null });
+          assert.deepEqual(data, { status: 'CANCELLED' }); return { count };
+        },
+      },
+    });
+    assert.equal((await route.DELETE(new Request('https://example.test/ad', { method: 'DELETE', body: '{"id":"campaign"}' }))).status, count ? 200 : 409);
+  }
 });

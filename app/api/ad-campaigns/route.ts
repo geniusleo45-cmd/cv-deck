@@ -3,6 +3,24 @@ import { getCurrentUser } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { premiumPackages, type PremiumPackage } from "@/lib/premiumListings";
 
+export async function DELETE(request: Request) {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "VENDOR") return NextResponse.json({ error: "Vendor access required." }, { status: 403 });
+  const input = await request.json().catch(() => null);
+  if (typeof input?.id !== "string" || !input.id) return NextResponse.json({ error: "Choose a Premium Listing." }, { status: 400 });
+  const campaign = await prisma.adCampaign.findFirst({ where: { id: input.id, vendor: { userId: user.id } } });
+  if (!campaign) return NextResponse.json({ error: "Premium Listing not found." }, { status: 404 });
+  if (campaign.status === "CANCELLED") return NextResponse.json({ cancelled: true });
+  // Shares the conditional campaign row with checkout reservation. Never discard
+  // a reference whose provider payment outcome may still be unknown.
+  const cancelled = await prisma.adCampaign.updateMany({
+    where: { id: campaign.id, vendor: { userId: user.id }, status: "PENDING_PAYMENT", paymentReference: null, paymentProvider: null, authorizationUrl: null },
+    data: { status: "CANCELLED" },
+  });
+  if (!cancelled.count) return NextResponse.json({ error: "This listing is no longer unpaid or a checkout has already started. Use Payment issue to reconcile that checkout before cancelling or changing plans." }, { status: 409 });
+  return NextResponse.json({ cancelled: true });
+}
+
 export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user || user.role !== "VENDOR") return NextResponse.json({ error: "Vendor access required." }, { status: 403 });

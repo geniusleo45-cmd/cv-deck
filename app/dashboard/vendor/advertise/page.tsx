@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { PremiumListingForm } from "./PremiumListingForm";
 import { PremiumListingPaymentSupportButton } from "./PremiumListingPaymentSupportButton";
+import { CancelPremiumListingButton } from "./CancelPremiumListingButton";
 
 type CampaignMetrics = { impressions: number; clicks: number; cartAdds: number };
 
@@ -127,6 +128,7 @@ export default async function AdvertisePage({
                           {status !== "PENDING_PAYMENT" && <p className="mt-2 text-xs font-semibold text-gray-600 dark:text-gray-300">{metrics.impressions.toLocaleString()} impressions · {metrics.clicks.toLocaleString()} detail clicks · {metrics.cartAdds.toLocaleString()} cart adds · {percentage(metrics.clicks, metrics.impressions)} CTR</p>}
                         </div>
                         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                          {status === "PENDING_PAYMENT" && <CancelPremiumListingButton campaignId={campaign.id} />}
                           {status === "PENDING_PAYMENT" && (campaign.authorizationUrl ? <a href={campaign.authorizationUrl} className="inline-flex shrink-0 items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700">Resume {providerName || "payment"}</a> : <Link href={`/dashboard/vendor/advertise?campaign=${encodeURIComponent(campaign.id)}`} className="inline-flex shrink-0 items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700">Choose payment</Link>)}
                           {(hasPaymentCheckout || campaign.supportRequest) && <PremiumListingPaymentSupportButton campaignId={campaign.id} canCreate={hasPaymentCheckout} initialSupportRequest={campaign.supportRequest ? { status: campaign.supportRequest.status, adminNote: campaign.supportRequest.adminNote, createdAt: campaign.supportRequest.createdAt.toISOString(), updatedAt: campaign.supportRequest.updatedAt.toISOString() } : null} />}
                           {["ACTIVE", "EXPIRED"].includes(status) && <><Link href={`/dashboard/vendor/advertise/${campaign.id}/report`} className="inline-flex shrink-0 items-center justify-center rounded-lg border border-blue-200 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-300 dark:hover:bg-blue-950/30">View performance</Link><Link href={`/dashboard/vendor/advertise/${campaign.id}/receipt`} className="inline-flex shrink-0 items-center justify-center rounded-lg border px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800">View receipt</Link></>}
