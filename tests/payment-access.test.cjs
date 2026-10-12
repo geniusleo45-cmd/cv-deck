@@ -119,3 +119,36 @@ test('unrelated vendor cannot read an order', async () => {
   const response = await route.GET(new Request('https://example.test/order'), { params: Promise.resolve({ id: 'order-1' }) });
   assert.equal(response.status, 403); assert.deepEqual(await response.json(), { error: 'Forbidden' });
 });
+
+test('signed-out order list does not query the database', async () => {
+  const route = load('app/api/orders/route.ts', null, {});
+  assert.equal((await route.GET()).status, 401);
+});
+for (const role of ['CUSTOMER', 'RECRUITER', 'VENDOR', 'ADMIN']) {
+  test(`${role}: order list limits relations and preserves role filters`, async () => {
+    let checked = false;
+    const route = load('app/api/orders/route.ts', { id: 'user-1', role }, {
+      vendor: { findUnique: async ({ where, select }) => {
+        assert.deepEqual(where, { userId: 'user-1' }); assert.deepEqual(select, { id: true }); return { id: 'vendor-1' };
+      } },
+      order: { findMany: async ({ where, select, include }) => {
+        assert.equal(include, undefined);
+        assert.deepEqual(select.payment, { select: { provider: true, status: true, verifiedAt: true } });
+        assert.deepEqual(select.items.select.product.select.vendor, { select: { id: true, businessName: true } });
+        if (role === 'ADMIN') assert.equal(where, undefined);
+        else if (role === 'VENDOR') {
+          assert.deepEqual(where, { items: { some: { product: { vendorId: 'vendor-1' } } } });
+          assert.deepEqual(select.items.where, { product: { vendorId: 'vendor-1' } });
+        } else assert.deepEqual(where, { userId: 'user-1' });
+        checked = true;
+        return [{ id: 'order-1', totalAmount: 9999, items: [{ price: 100, quantity: 2 }] }];
+      } },
+    });
+    const response = await route.GET(); assert.equal(response.status, 200); assert.equal(checked, true);
+    assert.equal((await response.json())[0].totalAmount, role === 'VENDOR' ? 200 : 9999);
+  });
+}
+test('vendor without a shop receives no orders', async () => {
+  const route = load('app/api/orders/route.ts', { id: 'user-1', role: 'VENDOR' }, { vendor: { findUnique: async () => null } });
+  const response = await route.GET(); assert.equal(response.status, 200); assert.deepEqual(await response.json(), []);
+});

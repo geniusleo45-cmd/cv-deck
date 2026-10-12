@@ -59,6 +59,12 @@ denial. The server-rendered receipt page is separate and unchanged.
 
 ## PostgreSQL integration checks
 
+Order-list privacy tests also cover all four roles, unauthenticated access and
+vendors without a shop. List queries select only public vendor identity and
+payment status/provider/verification time. A vendor's returned total is computed
+from its filtered items, excluding other vendors' merchandise in mixed orders.
+
+
 The separate “PostgreSQL payment concurrency” CI job starts a disposable
 PostgreSQL 16 service. `npm run test:payments:database` rejects execution unless
 GitHub Actions is active and both database URLs point to the explicitly named
