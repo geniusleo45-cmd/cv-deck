@@ -15,9 +15,10 @@ function readDocument(file: File) {
   });
 }
 
-export function VerificationForm() {
+export function VerificationForm({ initialPending = false }: { initialPending?: boolean }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [pending, setPending] = useState(initialPending);
   const [error, setError] = useState("");
   const [document, setDocument] = useState<{ name: string; data: string } | null>(null);
 
@@ -43,13 +44,16 @@ export function VerificationForm() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (loading || pending) return;
+    const formElement = event.currentTarget;
     if (!document) {
       setError("Upload a verification document before submitting.");
       return;
     }
     setLoading(true);
     setError("");
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formElement);
+    try {
     const response = await fetch("/api/vendors/verify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -62,10 +66,22 @@ export function VerificationForm() {
       return;
     }
     setDocument(null);
-    event.currentTarget.reset();
+    formElement.reset();
+    setPending(true);
     router.refresh();
+    } catch {
+      setError("Unable to confirm submission. Refresh to check your verification status before trying again.");
+    } finally {
     setLoading(false);
+    }
   }
+
+  if (pending) return (
+    <div className="mt-6 grid gap-3 rounded-xl border p-5" role="status">
+      <p className="text-sm text-gray-600 dark:text-gray-300">Your verification document has been submitted and is awaiting admin review.</p>
+      <button type="button" disabled className="w-fit rounded-lg bg-amber-100 px-4 py-2 text-sm font-bold text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">Pending Verification</button>
+    </div>
+  );
 
   return (
     <form onSubmit={submit} className="mt-6 grid gap-4 rounded-xl border p-5">
