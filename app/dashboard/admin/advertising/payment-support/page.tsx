@@ -3,6 +3,7 @@ import { ArrowLeft, CreditCard, LifeBuoy, Megaphone } from "lucide-react";
 import { requireAdmin } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { CampaignSupportActions } from "./CampaignSupportActions";
+import { CheckPaymentButton } from "../../payment-review/CheckPaymentButton";
 
 const statuses = ["OPEN", "UNDER_REVIEW", "RESOLVED", "REJECTED"] as const;
 const filters = ["ACTIVE", "ALL", ...statuses] as const;
@@ -86,6 +87,7 @@ export default async function AdCampaignPaymentSupportPage({
                 <td className="py-4 pr-4 text-xs">
                   <p className="font-bold">{providerLabel(supportRequest.campaign.paymentProvider)}</p>
                   <p className="mt-1 break-all text-[10px] text-gray-500">{supportRequest.campaign.paymentReference || "No stored reference"}</p>
+                  {supportRequest.campaign.status === "CANCELLED" && supportRequest.campaign.paymentProvider === "PAYSTACK" && <CheckPaymentButton id={supportRequest.campaign.id} kind="campaign" />}
                 </td>
                 <td className="max-w-sm py-4 pr-4">
                   <p className="text-xs font-bold text-gray-500">{supportRequest.reason.replaceAll("_", " ")}</p>

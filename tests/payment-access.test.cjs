@@ -166,15 +166,39 @@ test('premium cancellation requires vendor authentication and ownership', async 
 });
 test('premium cancellation condition preserves reserved checkout references', async () => {
   for (const count of [0, 1]) {
-    const route = load('app/api/ad-campaigns/route.ts', { id: 'seller', role: 'VENDOR' }, {
+    const prisma = {
       adCampaign: {
         findFirst: async () => ({ id: 'campaign', status: 'PENDING_PAYMENT' }),
+        findUniqueOrThrow: async () => ({ id: 'campaign', paymentReference: null }),
         updateMany: async ({ where, data }) => {
-          assert.deepEqual(where, { id: 'campaign', vendor: { userId: 'seller' }, status: 'PENDING_PAYMENT', paymentReference: null, paymentProvider: null, authorizationUrl: null });
-          assert.deepEqual(data, { status: 'CANCELLED' }); return { count };
+          assert.deepEqual(where, { id: 'campaign', vendor: { userId: 'seller' }, status: 'PENDING_PAYMENT' });
+          assert.deepEqual(data, { status: 'CANCELLED', authorizationUrl: null }); return { count };
         },
       },
-    });
+    };
+    prisma.$transaction = async (work) => work(prisma);
+    const route = load('app/api/ad-campaigns/route.ts', { id: 'seller', role: 'VENDOR' }, prisma);
     assert.equal((await route.DELETE(new Request('https://example.test/ad', { method: 'DELETE', body: '{"id":"campaign"}' }))).status, count ? 200 : 409);
   }
+});
+
+test('reserved premium cancellation opens review without deleting the reference', async () => {
+  let reviews = 0; let notifications = 0;
+  const prisma = {
+    adCampaign: {
+      findFirst: async () => ({ id: 'campaign', status: 'PENDING_PAYMENT' }),
+      updateMany: async ({ data }) => { assert.deepEqual(data, { status: 'CANCELLED', authorizationUrl: null }); return { count: 1 }; },
+      findUniqueOrThrow: async () => ({ id: 'campaign', paymentReference: 'preserved-reference' }),
+    },
+    adCampaignSupportRequest: { upsert: async ({ where, create, update }) => {
+      assert.deepEqual(where, { campaignId: 'campaign' }); assert.equal(create.userId, 'seller');
+      assert.equal(create.reason, 'CANCELLED_CHECKOUT'); assert.deepEqual(update, { status: 'OPEN' }); reviews++;
+    } },
+    user: { findMany: async () => [{ id: 'admin' }] },
+    notification: { createMany: async ({ data }) => { assert.equal(data[0].userId, 'admin'); notifications += data.length; } },
+  };
+  prisma.$transaction = async (work) => work(prisma);
+  const route = load('app/api/ad-campaigns/route.ts', { id: 'seller', role: 'VENDOR' }, prisma);
+  assert.equal((await route.DELETE(new Request('https://example.test/ad', { method: 'DELETE', body: '{"id":"campaign"}' }))).status, 200);
+  assert.equal(reviews, 1); assert.equal(notifications, 1);
 });

@@ -38,8 +38,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: outcome === "cancelled" ? "Payment recorded. Order remains cancelled; manual refund review is required." : "Payment verified and reconciled. No new charge was created." });
     }
     if (!campaign) return NextResponse.json({ error: "Campaign not found." }, { status: 404 });
-    if (campaign.status !== "PENDING_PAYMENT") return NextResponse.json({ message: "Payment verified. Campaign already processed; no placement changes made." });
+    if (!["PENDING_PAYMENT", "CANCELLED"].includes(campaign.status)) return NextResponse.json({ message: "Payment verified. Campaign already processed; no placement changes made." });
     const outcome = await activateVerifiedPremiumListing(campaign, "PAYSTACK", reference);
+    if (outcome === "cancelled-payment") return NextResponse.json({ message: "Payment recorded. Listing remains cancelled; review its advertising support case for a manual refund decision. No refund was issued." });
     if (outcome === "ineligible" || outcome === "product-already-promoted") return NextResponse.json({ error: "Payment confirmed, but placement cannot be activated. Review the advertising support case; no refund was issued." }, { status: 409 });
     return NextResponse.json({ message: "Payment verified and campaign reconciled. No new charge was created." });
   } catch {

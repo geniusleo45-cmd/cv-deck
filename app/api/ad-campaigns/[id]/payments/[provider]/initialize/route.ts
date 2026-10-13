@@ -96,7 +96,7 @@ export async function POST(
     if (latestCampaign?.status === "ACTIVE") {
       return NextResponse.json({ error: "This Premium Listing is already active." }, { status: 409 });
     }
-    if (latestCampaign?.paymentProvider === providerName && latestCampaign.authorizationUrl) {
+    if (latestCampaign?.status === "PENDING_PAYMENT" && latestCampaign.paymentProvider === providerName && latestCampaign.authorizationUrl) {
       return NextResponse.json({ authorizationUrl: latestCampaign.authorizationUrl });
     }
     return NextResponse.json({ error: "A payment checkout is already being prepared for this Premium Listing. Please try again in a moment." }, { status: 409 });
@@ -137,12 +137,13 @@ export async function POST(
       return NextResponse.json({ error: "Paystack did not return a confirmed checkout link. Your reference is preserved; use Payment issue to request reconciliation." }, { status: 502 });
     }
 
-    await prisma.adCampaign.updateMany({
+    const saved = await prisma.adCampaign.updateMany({
       where: { id: campaign.id, paymentProvider: providerName, paymentReference: reference, status: "PENDING_PAYMENT" },
       data: {
         authorizationUrl: result.data.authorization_url,
       },
     });
+    if (!saved.count) return NextResponse.json({ error: "The listing is no longer pending. Do not use this checkout; refresh to see its status." }, { status: 409 });
     return NextResponse.json({ authorizationUrl: result.data.authorization_url });
   }
 
@@ -151,6 +152,7 @@ export async function POST(
   try {
     response = await fetch("https://api.flutterwave.com/v3/payments", {
       method: "POST",
+      signal: AbortSignal.timeout(15000),
       headers: { Authorization: `Bearer ${gatewaySecret}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         tx_ref: reference,
@@ -172,19 +174,18 @@ export async function POST(
     });
     result = await response.json().catch(() => ({}));
   } catch {
-    await prisma.adCampaign.updateMany({ where: { id: campaign.id, paymentProvider: providerName, paymentReference: reference, status: "PENDING_PAYMENT" }, data: { paymentProvider: null, paymentReference: null, authorizationUrl: null } });
-    return NextResponse.json({ error: "Unable to reach Flutterwave. Please try again." }, { status: 502 });
+    return NextResponse.json({ error: "Flutterwave checkout could not be confirmed. The reference is preserved; use Payment issue to request reconciliation." }, { status: 502 });
   }
   if (!response.ok || result.status !== "success" || !result.data?.link) {
-    await prisma.adCampaign.updateMany({ where: { id: campaign.id, paymentProvider: providerName, paymentReference: reference, status: "PENDING_PAYMENT" }, data: { paymentProvider: null, paymentReference: null, authorizationUrl: null } });
-    return NextResponse.json({ error: result.message || "Unable to start Flutterwave payment." }, { status: 502 });
+    return NextResponse.json({ error: "Flutterwave did not return a confirmed checkout link. The reference is preserved; use Payment issue to request reconciliation." }, { status: 502 });
   }
 
-  await prisma.adCampaign.updateMany({
+  const saved = await prisma.adCampaign.updateMany({
     where: { id: campaign.id, paymentProvider: providerName, paymentReference: reference, status: "PENDING_PAYMENT" },
     data: {
       authorizationUrl: result.data.link,
     },
   });
+  if (!saved.count) return NextResponse.json({ error: "The listing is no longer pending. Do not use this checkout; refresh to see its status." }, { status: 409 });
   return NextResponse.json({ authorizationUrl: result.data.link });
 }

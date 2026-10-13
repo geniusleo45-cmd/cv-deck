@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       where: { paymentReference: reference, paymentProvider: "PAYSTACK" },
       include: { vendor: { select: { userId: true } }, product: { select: { name: true } } },
     });
-    if (!campaign || campaign.status !== "PENDING_PAYMENT") return NextResponse.json({ received: true });
+    if (!campaign || !["PENDING_PAYMENT", "CANCELLED"].includes(campaign.status)) return NextResponse.json({ received: true });
 
     const response = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, { headers: { Authorization: `Bearer ${secret}` }, cache: "no-store", signal: AbortSignal.timeout(15000) });
     if (!response.ok) return NextResponse.json({ error: "Payment verification temporarily unavailable." }, { status: 503 });

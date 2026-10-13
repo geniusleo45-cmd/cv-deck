@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     });
 
   // Duplicate events or payments that do not belong to CV Deck are safe to ignore.
-  if ((!payment && (!campaign || campaign.status !== "PENDING_PAYMENT")) || payment?.status === "SUCCESS") {
+  if ((!payment && (!campaign || !["PENDING_PAYMENT", "CANCELLED"].includes(campaign.status))) || payment?.status === "SUCCESS") {
     return NextResponse.json({ received: true });
   }
 

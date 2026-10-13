@@ -125,6 +125,7 @@ export default async function AdvertisePage({
                             <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${statusClass}`}>{status.replace("_", " ")}</span>
                           </div>
                           <p className="mt-1 text-xs text-gray-500">{campaign.package.toLowerCase()} placement · ₦{campaign.amount.toLocaleString()} {status === "ACTIVE" && campaign.endsAt ? `· ends ${campaign.endsAt.toLocaleDateString("en-NG", { dateStyle: "medium" })}` : ""}</p>
+                          {status === "CANCELLED" && campaign.paymentReference && <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">Do not use the old checkout link. Its reference is preserved for payment review; cancellation does not issue a refund.</p>}
                           {status !== "PENDING_PAYMENT" && <p className="mt-2 text-xs font-semibold text-gray-600 dark:text-gray-300">{metrics.impressions.toLocaleString()} impressions · {metrics.clicks.toLocaleString()} detail clicks · {metrics.cartAdds.toLocaleString()} cart adds · {percentage(metrics.clicks, metrics.impressions)} CTR</p>}
                         </div>
                         <div className="flex flex-wrap items-center gap-2 sm:justify-end">

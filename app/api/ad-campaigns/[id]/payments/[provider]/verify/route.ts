@@ -46,7 +46,7 @@ export async function POST(
   if (campaign.status === "ACTIVE") {
     return NextResponse.json({ campaign, alreadyActive: true });
   }
-  if (campaign.status !== "PENDING_PAYMENT" || campaign.paymentReference !== reference || campaign.paymentProvider !== provider.toUpperCase()) {
+  if (!["PENDING_PAYMENT", "CANCELLED"].includes(campaign.status) || campaign.paymentReference !== reference || campaign.paymentProvider !== provider.toUpperCase()) {
     return NextResponse.json({ error: "This payment does not match the Premium Listing." }, { status: 400 });
   }
 
@@ -56,6 +56,7 @@ export async function POST(
     if (!secret) return NextResponse.json({ error: "Payments are not configured yet." }, { status: 503 });
     const response = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
       headers: { Authorization: `Bearer ${secret}` },
+      cache: "no-store", signal: AbortSignal.timeout(15000),
     });
     const result = await response.json();
     paid = response.ok
@@ -63,6 +64,7 @@ export async function POST(
       && result.data?.status === "success"
       && result.data?.reference === reference
       && result.data?.currency === "NGN"
+      && typeof result.data?.amount === "number" && Number.isFinite(result.data.amount)
       && result.data?.amount >= Math.round(campaign.amount * 100);
   } else {
     const transactionId = input?.transactionId;
@@ -73,6 +75,7 @@ export async function POST(
     if (!secret) return NextResponse.json({ error: "Payments are not configured yet." }, { status: 503 });
     const response = await fetch(`https://api.flutterwave.com/v3/transactions/${encodeURIComponent(transactionId)}/verify`, {
       headers: { Authorization: `Bearer ${secret}` },
+      cache: "no-store", signal: AbortSignal.timeout(15000),
     });
     const result = await response.json();
     paid = response.ok
@@ -80,6 +83,7 @@ export async function POST(
       && result.data?.status === "successful"
       && result.data?.tx_ref === reference
       && result.data?.currency === "NGN"
+      && typeof result.data?.amount === "number" && Number.isFinite(result.data.amount)
       && result.data?.amount >= campaign.amount;
   }
 
@@ -88,6 +92,9 @@ export async function POST(
   }
 
   const activation = await activateVerifiedPremiumListing(campaign, provider.toUpperCase() as "PAYSTACK" | "FLUTTERWAVE", reference);
+  if (activation === "cancelled-payment") {
+    return NextResponse.json({ error: "Payment confirmed, but this listing remains cancelled. Admin has been notified to review the payment. No automatic refund has been issued." }, { status: 409 });
+  }
   const activeCampaign = await prisma.adCampaign.findUnique({ where: { id: campaign.id } });
   if (activation === "product-already-promoted") {
     return NextResponse.json({ error: "Your payment was confirmed, but another Premium Listing is already active for this product. Please contact CV Deck support so we can resolve the placement." }, { status: 409 });

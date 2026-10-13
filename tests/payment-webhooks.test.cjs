@@ -9,7 +9,7 @@ function fixture(provider, options = {}) {
   const calls = { lookups: 0, fetches: 0, finalized: 0, activated: 0 };
   const secret = 'fixture-secret-not-a-real-key';
   const payment = options.campaign ? null : { id: 'payment-1', amount: 100, status: options.duplicate ? 'SUCCESS' : 'PENDING', order: { status: 'PENDING' } };
-  const campaign = options.campaign ? { id: 'campaign-1', amount: 100, status: 'PENDING_PAYMENT' } : null;
+  const campaign = options.campaign ? { id: 'campaign-1', amount: 100, status: options.campaignStatus || 'PENDING_PAYMENT' } : null;
   const prisma = {
     payment: { findFirst: async ({ where }) => { calls.lookups++; assert.equal(where.provider, provider.toUpperCase()); return payment; } },
     adCampaign: { findFirst: async () => campaign },
@@ -57,6 +57,11 @@ function fixture(provider, options = {}) {
 }
 
 for (const provider of ['paystack', 'flutterwave']) {
+  test(`${provider}: cancelled campaigns still verify and reconcile late payments`, async () => {
+    const f = fixture(provider, { campaign: true, campaignStatus: 'CANCELLED' });
+    assert.equal((await f.post()).status, 200);
+    assert.equal(f.calls.fetches, 1); assert.equal(f.calls.activated, 1);
+  });
   test(`${provider}: invalid signature rejected before lookup or verification`, async () => {
     const f = fixture(provider); assert.equal((await f.post(true)).status, 401);
     assert.deepEqual(f.calls, { lookups: 0, fetches: 0, finalized: 0, activated: 0 });

@@ -11,12 +11,14 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient({ datasources: { db: { url: url.toString() } } });
 after(async () => { await prisma.$disconnect(); });
 
-function load(path, userId) {
+function load(path, userId, role = 'CUSTOMER') {
   const source = ts.transpileModule(readFileSync(join(__dirname, '..', path), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const exports = {};
   new Function('require', 'exports', source)((name) => {
     if (name === '@/lib/prisma') return { prisma };
-    if (name === '@/lib/rbac') return { getCurrentUser: async () => ({ id: userId, role: 'CUSTOMER' }) };
+    if (name === '@/lib/rbac') return { getCurrentUser: async () => ({ id: userId, role }) };
+    if (name === '@prisma/client') return require('@prisma/client');
+    if (name === '@/lib/premiumListings') return load('lib/premiumListings.ts');
     if (name === 'next/server') return { NextResponse: { json: (body, options) => Response.json(body, options) } };
     throw new Error(`Unexpected dependency: ${name}`);
   }, exports);
@@ -57,6 +59,51 @@ test('concurrent confirmations finalize once in PostgreSQL', async () => {
   assert.equal(results.filter(r => r === 'processed').length, 1);
   assert.equal(results.filter(r => r === 'already-processed').length, 4);
   await f.verify('PROCESSING');
+});
+
+async function campaignFixture() {
+  const suffix = randomUUID();
+  const seller = await prisma.user.create({ data: { email: `ad-${suffix}@example.test`, password: 'not-a-login', role: 'VENDOR' } });
+  const vendor = await prisma.vendor.create({ data: { userId: seller.id, businessName: 'Campaign fixture', officeAddress: 'Fixture', status: 'VERIFIED' } });
+  const category = await prisma.category.create({ data: { name: suffix, slug: suffix } });
+  const product = await prisma.product.create({ data: { name: 'Campaign product', description: 'Fixture', price: 100, stock: 8, status: 'ACTIVE', vendorId: vendor.id, categoryId: category.id } });
+  const campaign = await prisma.adCampaign.create({ data: { vendorId: vendor.id, productId: product.id, package: 'DAILY', status: 'PENDING_PAYMENT', amount: 420, paymentReference: suffix, paymentProvider: 'PAYSTACK', authorizationUrl: 'https://example.test/old' }, include: { vendor: true, product: true } });
+  const finalize = load('lib/adCampaignNotifications.ts').activateVerifiedPremiumListing;
+  const cancel = load('app/api/ad-campaigns/route.ts', seller.id, 'VENDOR').DELETE;
+  return {
+    finalize: () => finalize(campaign, 'PAYSTACK', suffix),
+    cancel: () => cancel(new Request('https://example.test/ad', { method: 'DELETE', body: JSON.stringify({ id: campaign.id }) })),
+    verify: async (status) => {
+      const current = await prisma.adCampaign.findUniqueOrThrow({ where: { id: campaign.id }, include: { supportRequest: true } });
+      assert.equal(current.status, status); assert.equal(current.paymentReference, suffix); assert.equal(current.authorizationUrl, null);
+      const notices = await prisma.notification.findMany({ where: { userId: seller.id } });
+      if (status === 'CANCELLED') {
+        assert.equal(current.startsAt, null); assert.equal(current.supportRequest.reason, 'CANCELLED_PAYMENT_CONFIRMED');
+        assert.equal(notices.filter(n => n.title === 'Payment received for cancelled listing').length, 1);
+        assert.equal(notices.filter(n => n.title === 'Premium Listing is live').length, 0);
+      } else assert.equal(notices.filter(n => n.title === 'Premium Listing is live').length, 1);
+    },
+  };
+}
+
+test('cancelled campaign keeps its reference and concurrent late payments notify once', async () => {
+  const f = await campaignFixture(); assert.equal((await f.cancel()).status, 200);
+  assert.deepEqual(await Promise.all([f.finalize(), f.finalize()]), ['cancelled-payment', 'cancelled-payment']);
+  await f.verify('CANCELLED');
+});
+
+test('activated campaign cannot be cancelled', async () => {
+  const f = await campaignFixture(); assert.equal(await f.finalize(), 'activated');
+  assert.equal((await f.cancel()).status, 409); await f.verify('ACTIVE');
+});
+
+test('campaign cancellation races verification without resurrecting cancelled placement', async () => {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const f = await campaignFixture();
+    const [response] = await Promise.all([f.cancel(), f.finalize(), f.finalize()]);
+    assert.ok([200, 409].includes(response.status));
+    await f.verify(response.status === 200 ? 'CANCELLED' : 'ACTIVE');
+  }
 });
 test('cancel first, then concurrent late confirmations: stock restored once', async () => {
   const f = await fixture(); assert.equal((await f.cancel()).status, 200);

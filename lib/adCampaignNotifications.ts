@@ -8,7 +8,7 @@ type CampaignReadyForActivation = Pick<AdCampaign, "id" | "package" | "productId
 };
 
 type CampaignPaymentProvider = "PAYSTACK" | "FLUTTERWAVE";
-export type PremiumListingActivationResult = "activated" | "already-processed" | "ineligible" | "product-already-promoted";
+export type PremiumListingActivationResult = "activated" | "already-processed" | "ineligible" | "product-already-promoted" | "cancelled-payment";
 
 /**
  * Turns a provider-verified, pending campaign into a live Premium Listing.
@@ -27,6 +27,32 @@ export async function activateVerifiedPremiumListing(
 
   try {
     return await prisma.$transaction(async (tx) => {
+      // Lock the campaign before checking status so cancellation and activation
+      // cannot both win. The reference is never discarded.
+      const claimed = await tx.adCampaign.updateMany({
+        where: { id: campaign.id, status: { in: ["PENDING_PAYMENT", "CANCELLED"] }, paymentProvider: provider, paymentReference: reference },
+        data: { authorizationUrl: null },
+      });
+      if (!claimed.count) return "already-processed";
+      const current = await tx.adCampaign.findUniqueOrThrow({ where: { id: campaign.id } });
+      if (current.status === "CANCELLED") {
+        const existing = await tx.adCampaignSupportRequest.findUnique({ where: { campaignId: campaign.id } });
+        // This system reason survives admin resolution and deduplicates callbacks.
+        if (existing?.reason !== "CANCELLED_PAYMENT_CONFIRMED") {
+          const details = `Provider verified payment ${reference} for this cancelled listing. Do not activate it. Admin must review any refund manually. No automatic refund was issued.`;
+          await tx.adCampaignSupportRequest.upsert({
+            where: { campaignId: campaign.id },
+            create: { campaignId: campaign.id, userId: campaign.vendor.userId, reason: "CANCELLED_PAYMENT_CONFIRMED", details },
+            update: { reason: "CANCELLED_PAYMENT_CONFIRMED", status: "OPEN", details: existing ? `${existing.details}\n\n${details}` : details },
+          });
+          const admins = await tx.user.findMany({ where: { role: "ADMIN" }, select: { id: true } });
+          await tx.notification.createMany({ data: [
+            { userId: campaign.vendor.userId, type: "SYSTEM", title: "Payment received for cancelled listing", message: "Your listing remains cancelled. Admin has been notified to review the payment; no automatic refund has been issued.", link: `/dashboard/vendor/advertise/${campaign.id}/support` },
+            ...admins.map((admin) => ({ userId: admin.id, type: "SYSTEM" as const, title: "Cancelled listing payment requires review", message: `Verified ${provider} payment ${reference}. The listing remains cancelled; review the payment manually.`, link: "/dashboard/admin/advertising/payment-support" })),
+          ] });
+        }
+        return "cancelled-payment";
+      }
       const eligibleProduct = await tx.product.findFirst({
         where: {
           id: campaign.productId,

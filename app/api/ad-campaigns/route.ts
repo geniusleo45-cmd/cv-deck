@@ -11,13 +11,27 @@ export async function DELETE(request: Request) {
   const campaign = await prisma.adCampaign.findFirst({ where: { id: input.id, vendor: { userId: user.id } } });
   if (!campaign) return NextResponse.json({ error: "Premium Listing not found." }, { status: 404 });
   if (campaign.status === "CANCELLED") return NextResponse.json({ cancelled: true });
-  // Shares the conditional campaign row with checkout reservation. Never discard
-  // a reference whose provider payment outcome may still be unknown.
-  const cancelled = await prisma.adCampaign.updateMany({
-    where: { id: campaign.id, vendor: { userId: user.id }, status: "PENDING_PAYMENT", paymentReference: null, paymentProvider: null, authorizationUrl: null },
-    data: { status: "CANCELLED" },
+  const cancelled = await prisma.$transaction(async (tx) => {
+    // Serialize against reservation and payment finalization; preserve the old
+    // reference and amount so a late payment remains attributable to this listing.
+    const changed = await tx.adCampaign.updateMany({
+      where: { id: campaign.id, vendor: { userId: user.id }, status: "PENDING_PAYMENT" },
+      data: { status: "CANCELLED", authorizationUrl: null },
+    });
+    if (!changed.count) return false;
+    const latest = await tx.adCampaign.findUniqueOrThrow({ where: { id: campaign.id } });
+    if (latest.paymentReference) {
+      await tx.adCampaignSupportRequest.upsert({
+        where: { campaignId: campaign.id },
+        create: { campaignId: campaign.id, userId: user.id, reason: "CANCELLED_CHECKOUT", details: "Vendor cancelled the listing after checkout was reserved. Payment outcome is unconfirmed. Reconcile the preserved reference; do not activate this listing. No refund has been issued." },
+        update: { status: "OPEN" },
+      });
+      const admins = await tx.user.findMany({ where: { role: "ADMIN" }, select: { id: true } });
+      await tx.notification.createMany({ data: admins.map((admin) => ({ userId: admin.id, type: "SYSTEM" as const, title: "Cancelled Premium Listing checkout", message: "A vendor cancelled a listing with an existing checkout. Review its payment reference before resolving the case.", link: "/dashboard/admin/advertising/payment-support" })) });
+    }
+    return true;
   });
-  if (!cancelled.count) return NextResponse.json({ error: "This listing is no longer unpaid or a checkout has already started. Use Payment issue to reconcile that checkout before cancelling or changing plans." }, { status: 409 });
+  if (!cancelled) return NextResponse.json({ error: "This listing has already been processed. Refresh to see its current status; active or paid listings cannot be cancelled here." }, { status: 409 });
   return NextResponse.json({ cancelled: true });
 }
 
