@@ -21,6 +21,7 @@ import {
   LifeBuoy,
   Megaphone,
   CreditCard,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -54,12 +55,17 @@ export function DashboardSidebar() {
           { href: "/dashboard/vendor/orders", label: "Customer Orders", icon: ShoppingBag },
           { href: "/dashboard/vendor/advertise", label: "Premium Listings", icon: Megaphone },
           { href: "/dashboard/vendor/verification", label: "Verification Status", icon: ShieldCheck },
+          { href: "/dashboard/opportunities", label: "Jobs & Procurement", icon: Briefcase },
           { href: "/dashboard/messages", label: "Messages & Inquiries", icon: MessageSquare },
           { href: "/dashboard/vendor/profile", label: "Business Profile", icon: User },
         ];
       case "RECRUITER":
         return [
-          { href: "/dashboard/recruiter", label: "Procurement Hub", icon: Briefcase },
+          { href: "/dashboard/recruiter", label: "Recruiter Overview", icon: LayoutDashboard },
+          { href: "/dashboard/recruiter/hiring", label: "Hiring & Projects", icon: Briefcase },
+          { href: "/dashboard/recruiter/procurement", label: "Procurement Requests", icon: Package },
+          { href: "/dashboard/recruiter/responses", label: "Applications & Quotes", icon: Users },
+          { href: "/dashboard/opportunities", label: "Browse Opportunities", icon: Search },
           { href: "/vendors", label: "Vendor Directory", icon: Store },
           { href: "/dashboard/messages", label: "Direct Inquiries", icon: MessageSquare },
           { href: "/dashboard/orders", label: "Corporate Orders", icon: ShoppingBag },
@@ -72,6 +78,7 @@ export function DashboardSidebar() {
           { href: "/dashboard/orders", label: "My Orders & Tracking", icon: ShoppingBag },
           { href: "/dashboard/cart", label: "Shopping Cart", icon: Package },
           { href: "/dashboard/wishlist", label: "Saved Products", icon: Heart },
+          { href: "/dashboard/opportunities", label: "Jobs & Procurement", icon: Briefcase },
           { href: "/dashboard/messages", label: "Messages", icon: MessageSquare },
           { href: "/dashboard/profile", label: "Account Settings", icon: Settings },
         ];

@@ -18,6 +18,8 @@ function load(path, userId, role = 'CUSTOMER') {
     if (name === '@/lib/prisma') return { prisma };
     if (name === '@/lib/rbac') return { getCurrentUser: async () => ({ id: userId, role }) };
     if (name === '@prisma/client') return require('@prisma/client');
+    if (name === 'zod') return require('zod');
+    if (name === '@/lib/recruiterOpportunities') return load('lib/recruiterOpportunities.ts');
     if (name === '@/lib/premiumListings') return load('lib/premiumListings.ts');
     if (name === 'next/server') return { NextResponse: { json: (body, options) => Response.json(body, options) } };
     throw new Error(`Unexpected dependency: ${name}`);
@@ -121,4 +123,45 @@ test('overlapping cancellation and confirmations preserve either valid outcome',
     assert.ok([200, 400, 409].includes(cancelled.status));
     await f.verify(cancelled.status === 200 ? 'CANCELLED' : 'PROCESSING');
   }
+});
+
+async function opportunityFixture(kind = 'JOB') {
+  const suffix = randomUUID();
+  const owner = await prisma.user.create({ data: { email: `recruiter-${suffix}@example.test`, password: 'not-a-login', role: 'RECRUITER', recruiterProfile: { create: { companyName: 'Test company' } } } });
+  const applicant = await prisma.user.create({ data: { email: `applicant-${suffix}@example.test`, password: 'not-a-login', role: 'VENDOR', vendorProfile: { create: { businessName: 'Applicant', officeAddress: 'Fixture', status: 'VERIFIED' } } } });
+  const request = (body, method = 'POST') => new Request('https://example.test/opportunities', { method, body: JSON.stringify(body) });
+  const published = await load('app/api/recruiter-opportunities/route.ts', owner.id, 'RECRUITER').POST(request({ kind, title: 'Fixture opportunity', description: 'A detailed fixture opportunity for database verification only.', location: 'Ikeja', quantity: 10, closesAt: new Date(Date.now() + 86400000).toISOString() }));
+  assert.equal(published.status, 201);
+  const { id } = await published.json();
+  const params = { params: Promise.resolve({ id }) };
+  return {
+    id, owner, applicant,
+    apply: () => load('app/api/recruiter-opportunities/[id]/responses/route.ts', applicant.id, 'VENDOR').POST(request({ message: 'I meet the requirements and am available to discuss this opportunity.', quoteAmount: 420 }), params),
+    close: (userId = owner.id) => load('app/api/recruiter-opportunities/[id]/route.ts', userId, 'RECRUITER').PATCH(request({ action: 'close' }, 'PATCH'), params),
+  };
+}
+
+for (const kind of ['JOB', 'PROCUREMENT']) {
+  test(`${kind}: database uniqueness prevents duplicate applications and notifications`, async () => {
+    const f = await opportunityFixture(kind);
+    const results = await Promise.all([f.apply(), f.apply()]);
+    assert.deepEqual(results.map(r => r.status).sort(), [201, 409]);
+    assert.equal(await prisma.opportunityResponse.count({ where: { opportunityId: f.id } }), 1);
+    assert.equal(await prisma.notification.count({ where: { userId: f.owner.id } }), 1);
+    const stored = await prisma.opportunityResponse.findFirstOrThrow({ where: { opportunityId: f.id } });
+    assert.equal(stored.quoteAmount === null ? null : Number(stored.quoteAmount), kind === 'JOB' ? null : 420);
+    const { responseVisibility } = load('lib/recruiterOpportunities.ts');
+    assert.equal(await prisma.opportunityResponse.count({ where: responseVisibility(f.id, 'unrelated-user', f.owner.id) }), 0);
+  });
+}
+
+test('database revocation and closed listings block new responses', async () => {
+  const f = await opportunityFixture();
+  await prisma.vendor.update({ where: { userId: f.applicant.id }, data: { status: 'PENDING' } });
+  assert.equal((await f.apply()).status, 403);
+  await prisma.vendor.update({ where: { userId: f.applicant.id }, data: { status: 'VERIFIED' } });
+  assert.equal((await f.close(f.applicant.id)).status, 404);
+  assert.equal((await f.close()).status, 200);
+  assert.equal((await f.apply()).status, 409);
+  assert.equal(await prisma.opportunityResponse.count({ where: { opportunityId: f.id } }), 0);
 });

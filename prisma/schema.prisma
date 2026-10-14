@@ -121,6 +121,8 @@ model User {
   reports          Report[]
   disputes         Dispute[]
   adCampaignSupportRequests AdCampaignSupportRequest[]
+  recruiterOpportunities RecruiterOpportunity[]
+  opportunityResponses OpportunityResponse[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -139,6 +141,59 @@ model RecruiterProfile {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum OpportunityKind {
+  JOB
+  PROCUREMENT
+}
+
+enum OpportunityStatus {
+  OPEN
+  CLOSED
+}
+
+enum OpportunityResponseStatus {
+  SUBMITTED
+  SHORTLISTED
+  SELECTED
+  DECLINED
+}
+
+model RecruiterOpportunity {
+  id String @id @default(cuid())
+  ownerId String
+  kind OpportunityKind
+  status OpportunityStatus @default(OPEN)
+  title String
+  description String
+  location String
+  terms String?
+  quantity Int?
+  closesAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  responses OpportunityResponse[]
+
+  @@index([ownerId, kind, createdAt])
+  @@index([status, kind, closesAt])
+}
+
+model OpportunityResponse {
+  id String @id @default(cuid())
+  opportunityId String
+  applicantId String
+  message String
+  quoteAmount Decimal? @db.Decimal(12, 2)
+  status OpportunityResponseStatus @default(SUBMITTED)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  opportunity RecruiterOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  applicant User @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+
+  @@unique([opportunityId, applicantId])
+  @@index([applicantId, createdAt])
 }
 
 model Vendor {

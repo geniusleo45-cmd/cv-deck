@@ -1,122 +1,31 @@
-import { getCurrentUser } from "@/lib/rbac";
-import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Briefcase, Store, MessageSquare, ShieldCheck, MapPin, Search } from "lucide-react";
+import { requireRecruiter } from "@/lib/rbac";
+import { prisma } from "@/lib/prisma";
 
 export default async function RecruiterDashboardPage() {
-  const user = await getCurrentUser();
-
-  const [vendors, recruiterProfile] = await Promise.all([
-    prisma.vendor.findMany({
-      where: { status: "VERIFIED" },
-      include: {
-        user: { select: { name: true, email: true, phone: true } },
-        _count: { select: { products: { where: { status: "ACTIVE" } } } },
-      },
-      orderBy: { rating: "desc" },
-    }),
-    prisma.recruiterProfile.findUnique({
-      where: { userId: user?.id },
-    }),
+  const user = await requireRecruiter();
+  const now = new Date();
+  const [profile, jobs, requests, responses, unread, recent] = await Promise.all([
+    prisma.recruiterProfile.findUnique({ where: { userId: user.id }, select: { companyName: true, industry: true } }),
+    prisma.recruiterOpportunity.count({ where: { ownerId: user.id, kind: "JOB", status: "OPEN", closesAt: { gt: now } } }),
+    prisma.recruiterOpportunity.count({ where: { ownerId: user.id, kind: "PROCUREMENT", status: "OPEN", closesAt: { gt: now } } }),
+    prisma.opportunityResponse.count({ where: { opportunity: { ownerId: user.id }, status: "SUBMITTED" } }),
+    prisma.message.count({ where: { receiverId: user.id, read: false } }),
+    prisma.recruiterOpportunity.findMany({ where: { ownerId: user.id }, orderBy: { createdAt: "desc" }, take: 6, select: { id: true, title: true, kind: true, _count: { select: { responses: true } } } }),
   ]);
-
-  return (
-    <div className="space-y-6">
-      {/* Recruiter Banner */}
-      <div className="rounded-3xl bg-gradient-to-r from-purple-900 via-indigo-900 to-purple-950 p-6 sm:p-8 text-white shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <span className="inline-block rounded-full bg-purple-500/20 text-purple-300 border border-purple-400/30 px-3 py-1 text-xs font-bold uppercase">
-            Recruiter & Procurement Portal
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-black">
-            {recruiterProfile?.companyName || "Corporate Procurement Hub"}
-          </h1>
-          <p className="text-xs sm:text-sm text-purple-200">
-            Source bulk enterprise IT hardware, laptops, networking gear, and component technicians directly from verified Computer Village vendors.
-          </p>
-        </div>
-        <Button size="lg" className="bg-purple-600 hover:bg-purple-700 text-white font-bold shrink-0 shadow-md gap-2" asChild>
-          <Link href="/dashboard/messages">
-            <MessageSquare className="h-5 w-5" /> Contact Vendors Directly
-          </Link>
-        </Button>
-      </div>
-
-      {/* Recruiter Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Link href="/vendors" className="rounded-2xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:bg-gray-900 space-y-1">
-          <div className="flex items-center justify-between text-xs text-gray-500 font-semibold">
-            <span>Verified Computer Village Vendors</span>
-            <ShieldCheck className="h-4 w-4 text-purple-600" />
-          </div>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {vendors.length}
-          </p>
-        </Link>
-
-        <div className="rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm space-y-1">
-          <div className="flex items-center justify-between text-xs text-gray-500 font-semibold">
-            <span>Company Industry</span>
-            <Briefcase className="h-4 w-4 text-blue-600" />
-          </div>
-          <p className="text-lg font-bold text-gray-900 dark:text-white truncate">
-            {recruiterProfile?.industry || "Information Technology"}
-          </p>
-        </div>
-
-        <div className="rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm space-y-1">
-          <div className="flex items-center justify-between text-xs text-gray-500 font-semibold">
-            <span>Procurement Status</span>
-            <Store className="h-4 w-4 text-emerald-500" />
-          </div>
-          <p className="text-2xl font-bold text-emerald-600">Active</p>
-        </div>
-      </div>
-
-      {/* Computer Village Vendor Directory for Procurement */}
-      <div className="rounded-2xl border bg-white dark:bg-gray-900 p-6 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Store className="h-5 w-5 text-purple-600" /> Verified Computer Village Suppliers
-          </h2>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/vendors">View Full Directory</Link>
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {vendors.map((v) => (
-            <div key={v.id} className="p-4 rounded-xl border bg-gray-50/50 dark:bg-gray-800/50 space-y-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
-                    {v.businessName}
-                    {v.status === "VERIFIED" && (
-                      <ShieldCheck className="h-4 w-4 text-purple-600 shrink-0" />
-                    )}
-                  </h3>
-                  <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-                    <MapPin className="h-3 w-3 text-blue-600 shrink-0" /> {v.officeAddress}
-                  </p>
-                </div>
-                <span className="text-xs font-bold text-amber-500 bg-amber-50 dark:bg-amber-950 px-2 py-1 rounded">
-                  {v.rating > 0 ? `${v.rating} ★` : "New Store"}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 pt-2 border-t">
-                <span>{v._count.products} Active Products</span>
-                <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs gap-1" asChild>
-                  <Link href={`/dashboard/messages?receiverId=${v.userId}`}>
-                    <MessageSquare className="h-3.5 w-3.5" /> Request Quote
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+  return <section className="min-w-0 space-y-6">
+    <header className="rounded-3xl bg-gradient-to-br from-purple-900 to-indigo-950 p-6 text-white sm:p-8"><p className="text-xs font-bold uppercase tracking-widest text-purple-200">Recruiter workspace</p><h1 className="mt-3 break-words text-2xl font-black sm:text-3xl">{profile?.companyName || "Hiring & procurement"}</h1><p className="mt-3 max-w-2xl text-sm text-purple-100">Find people for your team and suppliers for your business. Applications and quotations are restricted to verified accounts.</p><Link href="/dashboard/recruiter/profile" className="mt-4 inline-block text-sm font-bold underline">{profile ? "Edit company profile" : "Complete your company profile to publish"}</Link></header>
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{[
+      { label: "Open jobs / projects", value: jobs, href: "/dashboard/recruiter/hiring" },
+      { label: "Open purchase requests", value: requests, href: "/dashboard/recruiter/procurement" },
+      { label: "Responses to review", value: responses, href: "/dashboard/recruiter/responses" },
+      { label: "Unread messages", value: unread, href: "/dashboard/messages" },
+    ].map((item) => <Link key={item.label} href={item.href} className="min-w-0 rounded-2xl border bg-white p-4 dark:bg-gray-900"><p className="text-xs text-gray-500">{item.label}</p><p className="mt-2 text-2xl font-black">{item.value}</p></Link>)}</div>
+    <div className="grid gap-4 md:grid-cols-2">
+      <Link href="/dashboard/recruiter/hiring" className="rounded-2xl border bg-white p-6 hover:border-purple-400 dark:bg-gray-900"><h2 className="text-xl font-black">Hiring</h2><p className="mt-2 text-sm text-gray-500">Post a job or technician project. Review experience, shortlist applicants and select candidates.</p><p className="mt-5 text-sm font-bold text-purple-700 dark:text-purple-300">Manage hiring →</p></Link>
+      <Link href="/dashboard/recruiter/procurement" className="rounded-2xl border bg-white p-6 hover:border-purple-400 dark:bg-gray-900"><h2 className="text-xl font-black">Procurement</h2><p className="mt-2 text-sm text-gray-500">Specify equipment, quantities and delivery needs. Receive total quotations and compare supplier responses.</p><p className="mt-5 text-sm font-bold text-purple-700 dark:text-purple-300">Manage procurement →</p></Link>
     </div>
-  );
+    <section id="recent" className="space-y-3"><h2 className="text-lg font-bold">Recent opportunities</h2>{!recent.length && <p className="rounded-xl border border-dashed p-6 text-sm text-gray-500">Your published jobs and purchase requests will appear here.</p>}{recent.map((item) => <Link key={item.id} href={`/dashboard/opportunities/${item.id}`} className="block rounded-xl border p-4"><p className="break-words font-semibold">{item.title}</p><p className="mt-1 text-xs text-gray-500">{item.kind === "JOB" ? "Hiring" : "Procurement"} · {item._count.responses} responses</p></Link>)}</section>
+    <nav aria-label="Recruiter tools" className="flex flex-wrap gap-3 text-sm font-bold text-purple-700 dark:text-purple-300"><Link href="/vendors">Vendor directory</Link><Link href="/dashboard/marketplace">Marketplace</Link><Link href="/dashboard/orders">My purchases</Link><Link href="/dashboard/opportunities">Browse opportunities</Link></nav>
+  </section>;
 }

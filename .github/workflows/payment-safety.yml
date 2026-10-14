@@ -37,6 +37,10 @@ jobs:
         run: npx --no-install eslint tests/payment-review.test.cjs tests/payment-finalization.test.cjs tests/payment-webhooks.test.cjs tests/payment-access.test.cjs
       - name: Run payment regression tests
         run: npm run test:payments
+      - name: Lint recruiter verification tests
+        run: npx --no-install eslint tests/recruiter-opportunities.test.cjs
+      - name: Run recruiter authorization tests
+        run: npm run test:recruiter
   payment-database:
     name: PostgreSQL payment concurrency
     runs-on: ubuntu-latest
