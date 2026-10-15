@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { EmailVerification } from "@/components/account/EmailVerification";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -113,6 +114,7 @@ export default function ProfilePage() {
         </div>
       )}
 
+      <EmailVerification />
       <form onSubmit={handleSubmit} className="rounded-2xl border bg-white dark:bg-gray-900 p-6 shadow-sm space-y-4">
         <div className="flex items-center gap-4 border-b pb-4">
           <div className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-blue-600 text-lg font-bold text-white">

@@ -93,6 +93,7 @@ export default function LoginPage() {
           <div className="space-y-1.5">
             <div className="flex justify-between items-center">
               <Label className="text-xs font-bold text-gray-700 dark:text-gray-300">Password</Label>
+              <Link href="/forgot-password" className="text-xs font-semibold text-blue-600 hover:underline">Forgot password?</Link>
             </div>
             <Input
               type="password"
@@ -111,16 +112,6 @@ export default function LoginPage() {
             {loading ? "Signing in..." : "Sign In"} <ArrowRight className="h-4 w-4" />
           </Button>
         </form>
-
-        <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border text-center text-xs text-gray-500 space-y-1">
-          <p className="font-semibold text-gray-700 dark:text-gray-300">Demo Accounts (Password123!):</p>
-          <div className="grid grid-cols-2 gap-1 text-[11px] text-blue-600 font-medium">
-            <span>Customer: customer@gmail.com</span>
-            <span>Vendor: vendor@peppletech.ng</span>
-            <span>Recruiter: recruiter@techhub.ng</span>
-            <span>Admin: admin@cvdeck.ng</span>
-          </div>
-        </div>
 
         <div className="text-center text-xs text-gray-500">
           Don&apos;t have an account?{" "}

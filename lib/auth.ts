@@ -57,6 +57,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           image: user.avatar,
           role: user.role,
+          sessionVersion: user.sessionVersion,
           vendorId: user.vendorProfile?.id,
           recruiterId: user.recruiterProfile?.id,
         };
@@ -72,6 +73,12 @@ export const authOptions: NextAuthOptions = {
         token.vendorId = user.vendorId;
         token.recruiterId = user.recruiterId;
         token.picture = user.image;
+        token.sessionVersion = user.sessionVersion ?? 0;
+      }
+
+      if (token.id) {
+        const account = await prisma.user.findUnique({ where: { id: token.id as string }, select: { sessionVersion: true } });
+        if (!account || account.sessionVersion !== (token.sessionVersion ?? 0)) throw new Error("Session revoked. Please sign in again.");
       }
 
       if (trigger === "update" && session?.image) token.picture = session.image;

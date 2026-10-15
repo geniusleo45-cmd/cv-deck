@@ -41,6 +41,10 @@ jobs:
         run: npx --no-install eslint tests/recruiter-opportunities.test.cjs
       - name: Run recruiter authorization tests
         run: npm run test:recruiter
+      - name: Check account recovery foundation
+        run: |
+          npx --no-install eslint tests/account-recovery.test.cjs
+          npm run test:accounts
   payment-database:
     name: PostgreSQL payment concurrency
     runs-on: ubuntu-latest
