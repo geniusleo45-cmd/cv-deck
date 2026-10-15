@@ -103,15 +103,6 @@ export function Navbar() {
             <>
               <NotificationBell />
               <AccountMenu />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => signOut({ callbackUrl: "/" })}
-                aria-label="Log out"
-                className="hidden text-gray-600 hover:text-red-600 sm:inline-flex"
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
             </>
           ) : (
             <div className="hidden items-center gap-2 sm:flex">
