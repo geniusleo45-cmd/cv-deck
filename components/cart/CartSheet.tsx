@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ShoppingBag, Trash2, Plus, Minus, ArrowRight } from "lucide-react";
+import { ShoppingCart, Trash2, Plus, Minus, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -20,8 +20,8 @@ export function CartSheet() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="relative gap-2">
-          <ShoppingBag className="h-4 w-4" />
+        <Button variant="outline" size="sm" className="relative gap-2" aria-label={`Open shopping cart (${itemCount} items)`}>
+          <ShoppingCart className="h-4 w-4" />
           <span className="hidden sm:inline">Cart</span>
           {itemCount > 0 && (
             <span className="ml-1 rounded-full bg-blue-600 px-2 py-0.5 text-xs text-white font-bold">
@@ -33,7 +33,7 @@ export function CartSheet() {
       <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col p-6">
         <DialogHeader className="flex flex-row items-center justify-between border-b pb-3">
           <DialogTitle className="flex items-center gap-2 text-lg">
-            <ShoppingBag className="h-5 w-5 text-blue-600" />
+            <ShoppingCart className="h-5 w-5 text-blue-600" />
             Your Shopping Cart ({itemCount})
           </DialogTitle>
           {items.length > 0 && (
@@ -51,7 +51,7 @@ export function CartSheet() {
         <div className="flex-1 overflow-y-auto py-4 space-y-4 max-h-[50vh]">
           {items.length === 0 ? (
             <div className="text-center py-12 space-y-3">
-              <ShoppingBag className="h-12 w-12 text-gray-300 mx-auto" />
+              <ShoppingCart className="h-12 w-12 text-gray-300 mx-auto" />
               <p className="text-gray-500 font-medium">Your cart is currently empty</p>
               <Button size="sm" onClick={() => setOpen(false)} asChild>
                 <Link href="/dashboard/marketplace">Explore Marketplace</Link>
