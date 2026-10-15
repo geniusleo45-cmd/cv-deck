@@ -152,6 +152,12 @@ export default async function VendorDashboardPage() {
         </div>
       </div>
 
+      {/* Paid orders ready for fulfillment */}
+      <div className="rounded-2xl border bg-white dark:bg-gray-900 p-6 shadow-sm space-y-4">
+        <div><h2 className="text-lg font-bold text-gray-900 dark:text-white">Fulfillment queue</h2><p className="mt-1 text-xs text-gray-500">Update paid orders as you dispatch and complete delivery.</p></div>
+        {orders.filter((order) => (order.status === "PROCESSING" || order.status === "SHIPPED") && order.payment?.status === "SUCCESS").length === 0 ? <p className="rounded-xl bg-gray-50 p-4 text-sm text-gray-500 dark:bg-gray-800">No paid orders are waiting for fulfillment.</p> : <div className="space-y-3">{orders.filter((order) => (order.status === "PROCESSING" || order.status === "SHIPPED") && order.payment?.status === "SUCCESS").map((order) => <div key={order.id} className="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-bold text-sm text-gray-900 dark:text-white">Order #{order.orderNumber}</p><p className="mt-1 text-xs text-gray-500">{order.user.name || order.user.email} · {order.items.length} item{order.items.length === 1 ? "" : "s"} · ₦{order.items.reduce((sum, item) => sum + item.quantity * item.price, 0).toLocaleString()}</p></div><FulfillmentActions orderId={order.id} status={order.status as "PROCESSING" | "SHIPPED"} /></div>)}</div>}
+      </div>
+
       <div className="grid min-w-0 grid-cols-1 items-start gap-4 md:grid-cols-2">
         <section aria-labelledby="inventory-attention-heading" className="min-w-0 max-w-full rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-900 dark:bg-amber-950/20">
           <div className="flex min-w-0 flex-col gap-2">
@@ -180,12 +186,6 @@ export default async function VendorDashboardPage() {
             <Link href="/dashboard/vendor/advertise">Open Premium Listings <ArrowRight className="h-4 w-4 shrink-0" /></Link>
           </Button>
         </section>
-      </div>
-
-      {/* Paid orders ready for fulfillment */}
-      <div className="rounded-2xl border bg-white dark:bg-gray-900 p-6 shadow-sm space-y-4">
-        <div><h2 className="text-lg font-bold text-gray-900 dark:text-white">Fulfillment queue</h2><p className="mt-1 text-xs text-gray-500">Update paid orders as you dispatch and complete delivery.</p></div>
-        {orders.filter((order) => (order.status === "PROCESSING" || order.status === "SHIPPED") && order.payment?.status === "SUCCESS").length === 0 ? <p className="rounded-xl bg-gray-50 p-4 text-sm text-gray-500 dark:bg-gray-800">No paid orders are waiting for fulfillment.</p> : <div className="space-y-3">{orders.filter((order) => (order.status === "PROCESSING" || order.status === "SHIPPED") && order.payment?.status === "SUCCESS").map((order) => <div key={order.id} className="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-bold text-sm text-gray-900 dark:text-white">Order #{order.orderNumber}</p><p className="mt-1 text-xs text-gray-500">{order.user.name || order.user.email} · {order.items.length} item{order.items.length === 1 ? "" : "s"} · ₦{order.items.reduce((sum, item) => sum + item.quantity * item.price, 0).toLocaleString()}</p></div><FulfillmentActions orderId={order.id} status={order.status as "PROCESSING" | "SHIPPED"} /></div>)}</div>}
       </div>
 
       {/* Inventory Management Table */}
