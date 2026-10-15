@@ -83,17 +83,6 @@ export default async function VendorDashboardPage() {
         </Button>
       </div>
 
-      <section aria-labelledby="premium-listings-heading" className="flex flex-col gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-900 dark:bg-amber-950/20 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 id="premium-listings-heading" className="flex items-center gap-2 text-lg font-black text-gray-900 dark:text-white"><Megaphone className="h-5 w-5 text-amber-600" /> Premium Listings</h2>
-          <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">Promote your products in the marketplace’s Sponsored section with daily, weekly, or monthly packages.</p>
-          <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">{verificationStatus === "VERIFIED" ? "Choose a product, manage your promotions, and view campaign performance." : "Your shop must be verified before you can purchase a promotion."}</p>
-        </div>
-        <Button asChild className="w-full shrink-0 gap-2 bg-blue-600 font-bold text-white hover:bg-blue-700 sm:w-auto">
-          <Link href="/dashboard/vendor/advertise">Open Premium Listings <ArrowRight className="h-4 w-4" /></Link>
-        </Button>
-      </section>
-
       {/* Verification Warning Alert if Pending */}
       {verificationStatus !== "VERIFIED" && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 p-4 text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -163,37 +152,41 @@ export default async function VendorDashboardPage() {
         </div>
       </div>
 
-      {lowStockProducts.length > 0 && (
-        <section className="min-w-0 max-w-full rounded-2xl border border-amber-200 bg-amber-50 p-3 shadow-sm sm:p-5 dark:border-amber-900 dark:bg-amber-950/20">
-          <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="grid min-w-0 grid-cols-1 items-start gap-4 md:grid-cols-2">
+        <section aria-labelledby="inventory-attention-heading" className="min-w-0 max-w-full rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-900 dark:bg-amber-950/20">
+          <div className="flex min-w-0 flex-col gap-2">
             <div className="min-w-0">
-              <h2 className="flex items-center gap-2 text-sm font-bold text-amber-950 sm:text-base dark:text-amber-100"><AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" /> Inventory needs attention</h2>
+              <h2 id="inventory-attention-heading" className="flex items-center gap-2 text-sm font-bold text-amber-950 dark:text-amber-100"><AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" /> {lowStockProducts.length ? "Inventory needs attention" : "Inventory status"}</h2>
               <p className="mt-1 text-xs text-amber-800 dark:text-amber-200">{lowStockProducts.length} active product{lowStockProducts.length === 1 ? " is" : "s are"} low or out of stock.</p>
             </div>
             <Link href="/dashboard/vendor/products" className="shrink-0 text-xs font-bold text-amber-800 hover:underline dark:text-amber-200">View all inventory</Link>
           </div>
-          <div className="mt-4 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {lowStockProducts.slice(0, 6).map((product) => (
-              <Link key={product.id} href={`/dashboard/vendor/products/${product.id}`} className="grid min-w-0 max-w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-xl border border-amber-200 bg-white p-2.5 text-xs transition hover:border-amber-400 sm:p-3 sm:text-sm dark:border-amber-900 dark:bg-gray-900">
-                <span className="min-w-0 whitespace-normal font-bold text-gray-900 [overflow-wrap:anywhere] dark:text-white">{product.name}</span>
+          <div className="mt-3 grid min-w-0 grid-cols-1 gap-2">
+            {lowStockProducts.slice(0, 3).map((product) => (
+              <Link key={product.id} href={`/dashboard/vendor/products/${product.id}`} className="grid min-w-0 max-w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-amber-200 bg-white p-2 text-xs transition hover:border-amber-400 dark:border-amber-900 dark:bg-gray-900">
+                <span title={product.name} className="line-clamp-2 min-w-0 whitespace-normal font-bold text-gray-900 [overflow-wrap:anywhere] dark:text-white">{product.name}</span>
                 <span className={`whitespace-nowrap text-xs font-black ${product.stock === 0 ? "text-red-600" : "text-amber-700 dark:text-amber-300"}`}>{product.stock === 0 ? "Out of stock" : `${product.stock} left`}</span>
               </Link>
             ))}
           </div>
-          {lowStockProducts.length > 6 && <p className="mt-3 text-xs text-amber-800 dark:text-amber-200">Plus {lowStockProducts.length - 6} more item{lowStockProducts.length - 6 === 1 ? "" : "s"} requiring attention.</p>}
+          {lowStockProducts.length > 3 && <p className="mt-3 text-xs text-amber-800 dark:text-amber-200">Plus {lowStockProducts.length - 3} more item{lowStockProducts.length - 3 === 1 ? "" : "s"} requiring attention. View all inventory to manage them.</p>}
         </section>
-      )}
+
+        <section aria-labelledby="premium-listings-heading" className="min-w-0 space-y-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-900 dark:bg-amber-950/20">
+          <h2 id="premium-listings-heading" className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><Megaphone className="h-4 w-4 shrink-0 text-amber-600" /> Premium Listings</h2>
+          <p className="text-xs leading-relaxed text-gray-700 dark:text-gray-300">Get Sponsored placement with daily, weekly or monthly packages.</p>
+          <p className="text-xs text-gray-600 dark:text-gray-400">{verificationStatus === "VERIFIED" ? "Manage promotions and track campaign performance." : "Verify your shop before purchasing a promotion."}</p>
+          <Button asChild size="sm" className="max-w-full gap-2 bg-blue-600 text-xs font-bold text-white hover:bg-blue-700">
+            <Link href="/dashboard/vendor/advertise">Open Premium Listings <ArrowRight className="h-4 w-4 shrink-0" /></Link>
+          </Button>
+        </section>
+      </div>
 
       {/* Paid orders ready for fulfillment */}
       <div className="rounded-2xl border bg-white dark:bg-gray-900 p-6 shadow-sm space-y-4">
         <div><h2 className="text-lg font-bold text-gray-900 dark:text-white">Fulfillment queue</h2><p className="mt-1 text-xs text-gray-500">Update paid orders as you dispatch and complete delivery.</p></div>
         {orders.filter((order) => (order.status === "PROCESSING" || order.status === "SHIPPED") && order.payment?.status === "SUCCESS").length === 0 ? <p className="rounded-xl bg-gray-50 p-4 text-sm text-gray-500 dark:bg-gray-800">No paid orders are waiting for fulfillment.</p> : <div className="space-y-3">{orders.filter((order) => (order.status === "PROCESSING" || order.status === "SHIPPED") && order.payment?.status === "SUCCESS").map((order) => <div key={order.id} className="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-bold text-sm text-gray-900 dark:text-white">Order #{order.orderNumber}</p><p className="mt-1 text-xs text-gray-500">{order.user.name || order.user.email} · {order.items.length} item{order.items.length === 1 ? "" : "s"} · ₦{order.items.reduce((sum, item) => sum + item.quantity * item.price, 0).toLocaleString()}</p></div><FulfillmentActions orderId={order.id} status={order.status as "PROCESSING" | "SHIPPED"} /></div>)}</div>}
       </div>
-
-      <section className="rounded-2xl border bg-white p-6 shadow-sm dark:bg-gray-900">
-        <div className="flex items-center justify-between gap-3"><div><h2 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white"><Star className="h-5 w-5 fill-amber-400 text-amber-400" /> Recent customer feedback</h2><p className="mt-1 text-xs text-gray-500">Verified reviews from customers whose orders were delivered.</p></div>{vendor && vendor.rating > 0 && <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">{vendor.rating} / 5 store rating</span>}</div>
-        {!vendor?.reviews.length ? <p className="mt-4 rounded-xl bg-gray-50 p-4 text-sm text-gray-500 dark:bg-gray-800">No verified reviews yet. Customers can rate products after delivery.</p> : <div className="mt-4 space-y-3">{vendor.reviews.map((review) => <div key={review.id} className="rounded-xl border p-4"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-bold text-gray-900 dark:text-white">{review.product.name}</p><p className="mt-1 text-xs text-gray-500">By {review.user.name || "Verified shopper"} · {new Date(review.createdAt).toLocaleDateString("en-NG", { dateStyle: "medium" })}</p></div><Link href={`/dashboard/marketplace/${review.product.id}#reviews`} className="text-xs font-bold text-blue-600 hover:underline">View product review</Link></div><div className="mt-2 flex items-center gap-1 text-xs font-bold text-amber-600"><Star className="h-3.5 w-3.5 fill-amber-400" /> {review.rating}/5</div><p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{review.comment}</p><ReviewReplyForm reviewId={review.id} initialReply={review.vendorReply} /></div>)}</div>}
-      </section>
 
       {/* Inventory Management Table */}
       <div className="min-w-0 max-w-full rounded-2xl border bg-white dark:bg-gray-900 p-3 sm:p-6 shadow-sm space-y-4">
@@ -251,6 +244,10 @@ export default async function VendorDashboardPage() {
           </div>
         )}
       </div>
+      <section className="rounded-2xl border bg-white p-6 shadow-sm dark:bg-gray-900">
+        <div className="flex items-center justify-between gap-3"><div><h2 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white"><Star className="h-5 w-5 fill-amber-400 text-amber-400" /> Recent customer feedback</h2><p className="mt-1 text-xs text-gray-500">Verified reviews from customers whose orders were delivered.</p></div>{vendor && vendor.rating > 0 && <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">{vendor.rating} / 5 store rating</span>}</div>
+        {!vendor?.reviews.length ? <p className="mt-4 rounded-xl bg-gray-50 p-4 text-sm text-gray-500 dark:bg-gray-800">No verified reviews yet. Customers can rate products after delivery.</p> : <div className="mt-4 space-y-3">{vendor.reviews.map((review) => <div key={review.id} className="rounded-xl border p-4"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-bold text-gray-900 dark:text-white">{review.product.name}</p><p className="mt-1 text-xs text-gray-500">By {review.user.name || "Verified shopper"} · {new Date(review.createdAt).toLocaleDateString("en-NG", { dateStyle: "medium" })}</p></div><Link href={`/dashboard/marketplace/${review.product.id}#reviews`} className="text-xs font-bold text-blue-600 hover:underline">View product review</Link></div><div className="mt-2 flex items-center gap-1 text-xs font-bold text-amber-600"><Star className="h-3.5 w-3.5 fill-amber-400" /> {review.rating}/5</div><p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{review.comment}</p><ReviewReplyForm reviewId={review.id} initialReply={review.vendorReply} /></div>)}</div>}
+      </section>
     </div>
   );
 }
