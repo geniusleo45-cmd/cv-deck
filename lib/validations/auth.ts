@@ -14,8 +14,9 @@ export const registerSchema = z.object({
 });
 
 export const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(1, "Password is required"),
+  email: z.string().email("Invalid email address").max(254),
+  // Preserve existing passwords (including spaces) while bounding input size.
+  password: z.string().min(1, "Password is required").max(4096),
 });
 
 export const profileUpdateSchema = z.object({

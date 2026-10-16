@@ -4,16 +4,17 @@ const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 const ts = require('typescript');
 
-function load(file, overrides = {}) {
+function load(file, overrides = {}, env = process.env) {
   const exports = {};
   const source = ts.transpileModule(readFileSync(join(__dirname, '..', file), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
-  new Function('require', 'exports', source)((name) => {
+  new Function('require', 'exports', 'process', source)((name) => {
     if (name in overrides) return overrides[name];
     if (['node:crypto', 'zod', 'bcryptjs'].includes(name)) return require(name);
     if (name === '@/lib/prisma') return { prisma: {} };
+    if (name === '@/lib/validations/auth') return load('lib/validations/auth.ts', overrides, env);
     if (name === 'next/server') return { NextResponse: { json: (data, init) => Response.json(data, init) } };
     throw new Error(`Unexpected import ${name}`);
-  }, exports);
+  }, exports, { env });
   return exports;
 }
 const core = load('lib/accountRecovery.ts');
@@ -127,4 +128,52 @@ test('public registration cannot request ADMIN', () => {
   const input = { name: 'Fixture', email: 'fixture@example.test', password: 'fixture-password', role: 'ADMIN' };
   assert.equal(registerSchema.safeParse(input).success, false);
   assert.equal(registerSchema.safeParse({ ...input, role: 'CUSTOMER' }).success, true);
+});
+
+test('login rejects malformed and oversized credentials before database access', async () => {
+  const { authOptions } = load('lib/auth.ts', { 'next-auth/providers/credentials': (options) => options });
+  const authorize = authOptions.providers[0].authorize;
+  for (const credentials of [undefined, {}, { email: {}, password: 'test' }, { email: 'invalid', password: 'test' }, { email: 'fixture@example.test', password: '' }, { email: 'fixture@example.test', password: 'a'.repeat(4097) }, { email: 'fixture@example.test', password: ['test'] }]) {
+    assert.equal(await authorize(credentials), null);
+  }
+});
+
+test('normal credentials preserve exact password and obtain identity from database', async () => {
+  const password = '  valid password with spaces  ';
+  const account = { id: 'real-user', email: 'fixture@example.test', name: 'Fixture', password: 'stored-hash', role: 'CUSTOMER', sessionVersion: 2 };
+  const { authOptions } = load('lib/auth.ts', {
+    'next-auth/providers/credentials': (options) => options,
+    '@/lib/prisma': { prisma: { user: { findUnique: async ({ where }) => { assert.deepEqual(where, { email: account.email }); return account; } } } },
+    bcryptjs: { compare: async (received, hash) => { assert.equal(received, password); assert.equal(hash, 'stored-hash'); return true; } },
+  });
+  const result = await authOptions.providers[0].authorize({ email: account.email, password, role: 'ADMIN', id: 'forged' });
+  assert.equal(result.id, 'real-user');
+  assert.equal(result.role, 'CUSTOMER');
+  assert.equal(result.sessionVersion, 2);
+  assert.equal(result.password, undefined);
+});
+
+test('missing account and incorrect password fail authentication', async () => {
+  for (const account of [null, { password: 'stored-hash' }]) {
+    const { authOptions } = load('lib/auth.ts', {
+      'next-auth/providers/credentials': (options) => options,
+      '@/lib/prisma': { prisma: { user: { findUnique: async () => account } } },
+      bcryptjs: { compare: async () => false },
+    });
+    assert.equal(await authOptions.providers[0].authorize({ email: 'fixture@example.test', password: 'wrong' }), null);
+  }
+});
+
+test('authentication has no hard-coded secret fallback', () => {
+  const mocks = { 'next-auth/providers/credentials': (options) => options };
+  assert.equal(load('lib/auth.ts', mocks, {}).authOptions.secret, undefined);
+  assert.equal(load('lib/auth.ts', mocks, { NEXTAUTH_SECRET: 'fixture-only-secret' }).authOptions.secret, 'fixture-only-secret');
+});
+
+test('retired login endpoint performs no credential or database checks', async () => {
+  const route = load('app/api/login/route.ts');
+  const response = await route.POST();
+  assert.equal(response.status, 410);
+  assert.equal(response.headers.get('cache-control'), 'no-store');
+  assert.equal((await response.json()).user, undefined);
 });

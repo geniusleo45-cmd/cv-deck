@@ -2,6 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { loginSchema } from "@/lib/validations/auth";
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -24,13 +25,14 @@ export const authOptions: NextAuthOptions = {
       },
 
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        const parsed = loginSchema.safeParse(credentials);
+        if (!parsed.success) {
           return null;
         }
 
         const user = await prisma.user.findUnique({
           where: {
-            email: credentials.email,
+            email: parsed.data.email,
           },
           include: {
             vendorProfile: true,
@@ -43,7 +45,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         const validPassword = await bcrypt.compare(
-          credentials.password,
+          parsed.data.password,
           user.password
         );
 
@@ -103,5 +105,7 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
 
-  secret: process.env.NEXTAUTH_SECRET || "super-secret-cv-deck-key-2026",
+  // NextAuth refuses production authentication when this secret is missing.
+  // Never substitute a public or predictable fallback.
+  secret: process.env.NEXTAUTH_SECRET,
 };
