@@ -22,7 +22,6 @@ export function CartSheet() {
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="relative gap-2" aria-label={`Open shopping cart (${itemCount} items)`}>
           <ShoppingCart className="h-4 w-4" />
-          <span className="hidden sm:inline">Cart</span>
           {itemCount > 0 && (
             <span className="ml-1 rounded-full bg-blue-600 px-2 py-0.5 text-xs text-white font-bold">
               {itemCount}
