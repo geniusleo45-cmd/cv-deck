@@ -37,7 +37,11 @@ export default function LoginPage() {
       });
 
       if (res?.error) {
-        setError("Invalid email or password");
+        setError(res.error === "TooManyAttempts"
+          ? "Too many sign-in attempts. Please wait up to 15 minutes and try again."
+          : res.error === "SignInUnavailable"
+            ? "Sign-in is temporarily unavailable. Please try again later."
+            : "Invalid email or password");
       } else {
         router.push(callbackUrl);
         router.refresh();

@@ -63,5 +63,9 @@ export async function GET(request: Request) {
     if (expiredCampaign) expiredPremiumListings += 1;
   }
 
-  return NextResponse.json({ expired, expiredPremiumListings });
+  // Retain at most one extra day of expired security buckets for cleanup safety.
+  const clearedAuthLimits = await prisma.authRateLimit.deleteMany({
+    where: { expiresAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+  });
+  return NextResponse.json({ expired, expiredPremiumListings, clearedAuthLimits: clearedAuthLimits.count });
 }

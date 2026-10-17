@@ -43,7 +43,7 @@ jobs:
         run: npm run test:recruiter
       - name: Check account recovery foundation
         run: |
-          npx --no-install eslint tests/account-recovery.test.cjs
+          npx --no-install eslint tests/account-recovery.test.cjs tests/auth-rate-limit.test.cjs
           npm run test:accounts
   payment-database:
     name: PostgreSQL payment concurrency
@@ -66,6 +66,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://cvdeck_test:disposable_ci_password@127.0.0.1:5432/cvdeck_payment_test
       DIRECT_URL: postgresql://cvdeck_test:disposable_ci_password@127.0.0.1:5432/cvdeck_payment_test
+      NEXTAUTH_SECRET: disposable-ci-only-auth-fixture-secret
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:

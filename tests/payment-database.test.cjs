@@ -19,6 +19,7 @@ function load(path, userId, role = 'CUSTOMER') {
     if (name === '@/lib/rbac') return { getCurrentUser: async () => ({ id: userId, role }) };
     if (name === '@prisma/client') return require('@prisma/client');
     if (name === 'zod') return require('zod');
+    if (name === 'node:crypto' || name === 'node:net') return require(name);
     if (name === '@/lib/recruiterOpportunities') return load('lib/recruiterOpportunities.ts');
     if (name === '@/lib/premiumListings') return load('lib/premiumListings.ts');
     if (name === 'next/server') return { NextResponse: { json: (body, options) => Response.json(body, options) } };
@@ -26,6 +27,29 @@ function load(path, userId, role = 'CUSTOMER') {
   }, exports);
   return exports;
 }
+
+test('authentication limit atomically admits only the quota under concurrent requests', async () => {
+  const limiter = load('lib/authRateLimit.ts');
+  const identity = `fixture-${randomUUID()}`;
+  const key = limiter.authBucketKey('login-ip', identity);
+  try {
+    const results = await Promise.allSettled(Array.from({ length: 75 }, () => limiter.consumeAuthLimit('login-ip', identity)));
+    assert.equal(results.filter((result) => result.status === 'fulfilled').length, 60);
+    const rejected = results.filter((result) => result.status === 'rejected');
+    assert.equal(rejected.length, 15);
+    for (const result of rejected) assert.ok(result.reason instanceof limiter.AuthRateLimitError);
+    const before = await prisma.authRateLimit.findUniqueOrThrow({ where: { key } });
+    assert.equal(before.count, 61);
+    await assert.rejects(limiter.consumeAuthLimit('login-ip', identity), limiter.AuthRateLimitError);
+    const after = await prisma.authRateLimit.findUniqueOrThrow({ where: { key } });
+    assert.equal(after.expiresAt.getTime(), before.expiresAt.getTime());
+    await prisma.authRateLimit.update({ where: { key }, data: { expiresAt: new Date(0) } });
+    await limiter.consumeAuthLimit('login-ip', identity);
+    assert.equal((await prisma.authRateLimit.findUniqueOrThrow({ where: { key } })).count, 1);
+  } finally {
+    await prisma.authRateLimit.deleteMany({ where: { key } });
+  }
+});
 
 async function fixture() {
   const suffix = randomUUID();

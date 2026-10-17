@@ -12,7 +12,7 @@
     "lint": "eslint",
     "test:payment-review": "node --test tests/payment-review.test.cjs",
     "test:recruiter": "node --test tests/recruiter-opportunities.test.cjs",
-    "test:accounts": "node --test tests/account-recovery.test.cjs",
+    "test:accounts": "node --test tests/account-recovery.test.cjs tests/auth-rate-limit.test.cjs",
     "test:payments": "node --test tests/payment-review.test.cjs tests/payment-finalization.test.cjs tests/payment-webhooks.test.cjs tests/payment-access.test.cjs",
     "test:payments:database": "node tests/run-payment-db.cjs"
   },

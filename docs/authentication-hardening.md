@@ -17,6 +17,6 @@ Vercel Production before deploying this change. Never share or commit its value.
 No secret is generated or rotated by this change. If the previous fallback was
 used, configure a new private secret and expect existing sessions to be signed out.
 
-Still needed: durable credential/registration request throttling, broader role
-authorization audit, and securing any existing demo accounts. Do not enable
+Credential/registration request throttling is documented in auth-rate-limits.md.
+Still needed: broader role authorization audit and securing any existing demo accounts. Do not enable
 public recovery email until its separate delivery and abuse safeguards are ready.

@@ -11,6 +11,7 @@ function load(file, overrides = {}, env = process.env) {
     if (name in overrides) return overrides[name];
     if (['node:crypto', 'zod', 'bcryptjs'].includes(name)) return require(name);
     if (name === '@/lib/prisma') return { prisma: {} };
+    if (name === '@/lib/authRateLimit') return { authClientAddress: () => 'fixture-ip', consumeAuthLimit: async () => {}, AuthRateLimitError: class extends Error {} };
     if (name === '@/lib/validations/auth') return load('lib/validations/auth.ts', overrides, env);
     if (name === 'next/server') return { NextResponse: { json: (data, init) => Response.json(data, init) } };
     throw new Error(`Unexpected import ${name}`);

@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { loginSchema } from "@/lib/validations/auth";
+import { authClientAddress, AuthRateLimitError, consumeAuthLimit } from "@/lib/authRateLimit";
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -24,10 +25,21 @@ export const authOptions: NextAuthOptions = {
         },
       },
 
-      async authorize(credentials) {
+      async authorize(credentials, request) {
+        try {
+          await consumeAuthLimit("login-ip", authClientAddress(request?.headers));
+        } catch (error) {
+          throw new Error(error instanceof AuthRateLimitError ? "TooManyAttempts" : "SignInUnavailable");
+        }
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) {
           return null;
+        }
+
+        try {
+          await consumeAuthLimit("login-email", parsed.data.email);
+        } catch (error) {
+          throw new Error(error instanceof AuthRateLimitError ? "TooManyAttempts" : "SignInUnavailable");
         }
 
         const user = await prisma.user.findUnique({

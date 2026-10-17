@@ -131,6 +131,14 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
+model AuthRateLimit {
+  key String @id
+  count Int
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}
+
 model AccountToken {
   id String @id @default(cuid())
   userId String
