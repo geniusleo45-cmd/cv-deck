@@ -24,6 +24,7 @@ export async function GET() {
       },
       include: {
         messages: {
+          where: { OR: [{ senderId: sessionUser.id }, { receiverId: sessionUser.id }] },
           orderBy: { createdAt: "desc" },
           take: 1,
           include: {

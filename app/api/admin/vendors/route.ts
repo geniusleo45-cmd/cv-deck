@@ -45,7 +45,7 @@ export async function PUT(req: Request) {
         status: vendorStatus,
         verifiedAt: validated.status === "APPROVED" ? new Date() : null,
       },
-      include: { user: true },
+      select: { id: true, userId: true, businessName: true, status: true, verifiedAt: true },
     });
 
     // Update pending verifications for this vendor

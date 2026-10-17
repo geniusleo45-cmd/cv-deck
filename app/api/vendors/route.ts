@@ -2,14 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/rbac";
 import { vendorUpdateSchema } from "@/lib/validations/vendor";
+import { publicVendorSelect } from "@/lib/publicVendor";
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const query = searchParams.get("query");
-    const status = searchParams.get("status");
-
-    const where: any = {};
+    const where: any = { status: "VERIFIED" };
 
     if (query) {
       where.OR = [
@@ -18,15 +17,11 @@ export async function GET(req: Request) {
       ];
     }
 
-    if (status) {
-      where.status = status;
-    }
-
     const vendors = await prisma.vendor.findMany({
       where,
-      include: {
-        user: { select: { name: true, email: true, phone: true, avatar: true } },
-        _count: { select: { products: true, reviews: true } },
+      select: {
+        ...publicVendorSelect,
+        _count: { select: { products: { where: { status: "ACTIVE" } }, reviews: true } },
       },
       orderBy: { createdAt: "desc" },
     });

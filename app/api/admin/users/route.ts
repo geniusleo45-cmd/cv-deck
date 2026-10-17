@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAdmin } from "@/lib/rbac";
+import { getCurrentUser } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 
 const updateSchema = z.object({ userId: z.string().min(1), role: z.enum(["CUSTOMER", "VENDOR", "RECRUITER", "ADMIN"]) });
 
 export async function PUT(request: Request) {
-  const admin = await requireAdmin();
+  const admin = await getCurrentUser();
+  if (!admin) return NextResponse.json({ error: "Please sign in." }, { status: 401 });
+  if (admin.role !== "ADMIN") return NextResponse.json({ error: "Admin access required." }, { status: 403 });
   const input = updateSchema.safeParse(await request.json().catch(() => null));
   if (!input.success) return NextResponse.json({ error: "Invalid user update." }, { status: 400 });
   if (input.data.userId === admin.id) return NextResponse.json({ error: "You cannot change your own role." }, { status: 400 });
-  const user = await prisma.user.update({ where: { id: input.data.userId }, data: { role: input.data.role }, select: { id: true, role: true } }).catch(() => null);
+  const user = await prisma.user.update({ where: { id: input.data.userId }, data: { role: input.data.role, sessionVersion: { increment: 1 } }, select: { id: true, role: true } }).catch(() => null);
   if (!user) return NextResponse.json({ error: "User not found." }, { status: 404 });
   return NextResponse.json(user);
 }

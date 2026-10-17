@@ -43,7 +43,7 @@ jobs:
         run: npm run test:recruiter
       - name: Check account recovery foundation
         run: |
-          npx --no-install eslint tests/account-recovery.test.cjs tests/auth-rate-limit.test.cjs
+          npx --no-install eslint tests/account-recovery.test.cjs tests/auth-rate-limit.test.cjs tests/role-access.test.cjs
           npm run test:accounts
   payment-database:
     name: PostgreSQL payment concurrency

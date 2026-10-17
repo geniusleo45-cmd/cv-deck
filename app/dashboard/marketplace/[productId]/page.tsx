@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { publicVendorSelect } from "@/lib/publicVendor";
 import { getCurrentUser } from "@/lib/rbac";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -21,11 +22,7 @@ export default async function ProductDetailPage({
     where: { id: productId },
     include: {
       category: true,
-      vendor: {
-        include: {
-          user: { select: { id: true, name: true, email: true, phone: true } },
-        },
-      },
+      vendor: { select: publicVendorSelect },
       reviews: {
         include: {
           user: { select: { name: true, avatar: true } },
@@ -45,7 +42,7 @@ export default async function ProductDetailPage({
 
   const relatedProducts = await prisma.product.findMany({
     where: { categoryId: product.categoryId, id: { not: product.id }, status: "ACTIVE", vendor: { status: "VERIFIED" } },
-    include: { vendor: true, category: true, wishlistItems: { where: { userId: sessionUser?.id || "__anonymous__" }, select: { id: true } } },
+    include: { vendor: { select: publicVendorSelect }, category: true, wishlistItems: { where: { userId: sessionUser?.id || "__anonymous__" }, select: { id: true } } },
     orderBy: { createdAt: "desc" },
     take: 4,
   });

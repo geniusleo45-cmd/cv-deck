@@ -115,7 +115,7 @@ test('existing versionless sessions work until reset; stale sessions and forged 
   let version = 0;
   const { authOptions } = load('lib/auth.ts', {
     'next-auth/providers/credentials': (options) => options,
-    '@/lib/prisma': { prisma: { user: { findUnique: async () => ({ sessionVersion: version }) } } },
+    '@/lib/prisma': { prisma: { user: { findUnique: async () => ({ sessionVersion: version, role: 'CUSTOMER' }) } } },
   });
   const token = { id: 'user', role: 'CUSTOMER' };
   assert.equal((await authOptions.callbacks.jwt({ token })).id, 'user');

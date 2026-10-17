@@ -91,8 +91,13 @@ export const authOptions: NextAuthOptions = {
       }
 
       if (token.id) {
-        const account = await prisma.user.findUnique({ where: { id: token.id as string }, select: { sessionVersion: true } });
-        if (!account || account.sessionVersion !== (token.sessionVersion ?? 0)) throw new Error("Session revoked. Please sign in again.");
+        const account = await prisma.user.findUnique({ where: { id: token.id as string }, select: {
+          sessionVersion: true, role: true,
+          vendorProfile: { select: { id: true } }, recruiterProfile: { select: { id: true } },
+        } });
+        if (!account || account.sessionVersion !== (token.sessionVersion ?? 0) || account.role !== token.role) throw new Error("Session revoked. Please sign in again.");
+        token.vendorId = account.role === "VENDOR" ? account.vendorProfile?.id : undefined;
+        token.recruiterId = account.role === "RECRUITER" ? account.recruiterProfile?.id : undefined;
       }
 
       if (trigger === "update" && session?.image) token.picture = session.image;

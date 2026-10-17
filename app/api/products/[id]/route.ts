@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { productSchema } from "@/lib/validations/product";
+import { publicVendorSelect } from "@/lib/publicVendor";
 
 export async function GET(
   req: Request,
@@ -9,18 +10,13 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const viewer = await getCurrentUser();
 
-    const product = await prisma.product.findUnique({
-      where: { id },
+    const product = await prisma.product.findFirst({
+      where: { id, ...(viewer?.role === "ADMIN" ? {} : { status: "ACTIVE", vendor: { status: "VERIFIED" } }) },
       include: {
         category: true,
-        vendor: {
-          include: {
-            user: {
-              select: { name: true, email: true, phone: true, avatar: true },
-            },
-          },
-        },
+        vendor: { select: publicVendorSelect },
         reviews: {
           include: {
             user: {
@@ -36,7 +32,7 @@ export async function GET(
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    return NextResponse.json(product);
+    return NextResponse.json(product, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch product" }, { status: 500 });
   }
